@@ -1,0 +1,22 @@
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+
+# Compiled typescript
+dist/*
+
+# Dependency directory
+node_modules
+package-lock.json
+
+# Debug log from npm
+npm-debug.log
+
+.DS_Store
+
+.env*
