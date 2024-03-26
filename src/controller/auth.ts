@@ -1,5 +1,6 @@
 import express from "express";
-import { authentication, random } from "../helpers/auth";
+import jwt from "jsonwebtoken";
+import { authentication, generateSalt } from "../helpers/hashing";
 import { createUser, getUserByEmail } from "../model/user/action";
 import { createUserSchema, readUserSchema } from "../schema/user";
 import { response } from "../helpers/response";
@@ -21,8 +22,8 @@ export const signup = async (req: express.Request, res: express.Response) => {
       res
     );
 
-  const salt = random();
-  const hashedPassword = authentication(salt, password);
+  const salt = generateSalt();
+  const hashedPassword = authentication(password, salt);
   if (!hashedPassword)
     return response(
       { data: null, statusCode: 400, message: "Password not match" },
@@ -53,29 +54,47 @@ export const signin = async (req: express.Request, res: express.Response) => {
     );
 
   const { email, password } = user.data;
-
   const existingUser = await getUserByEmail(email).select(
-    "+authentication.salt +authentication.password"
+    "+authentication.password +authentication.salt"
   );
-  if (!existingUser?.authentication?.salt)
+
+  if (
+    !existingUser?.authentication?.password ||
+    !existingUser?.authentication?.salt
+  ) {
     return response(
-      { data: null, statusCode: 500, message: "User not found" },
+      { data: null, statusCode: 500, message: "Internal server error" },
+      res
+    );
+  }
+
+  const isPasswordSame =
+    authentication(password, existingUser.authentication.salt) ===
+    existingUser.authentication.password;
+
+  if (!isPasswordSame)
+    return response(
+      { data: null, statusCode: 403, message: "Credential error" },
       res
     );
 
-  const expectedHash = authentication(
-    existingUser.authentication.salt,
-    password
+  const token = jwt.sign(
+    {
+      id: existingUser.id,
+      email: existingUser.email,
+      username: existingUser.username,
+    },
+    process.env.SECRET || "",
+    { expiresIn: 3600 }
   );
-
-  if (expectedHash !== existingUser.authentication.salt)
-    return response(
-      { data: null, statusCode: 403, message: "Password not match" },
-      res
-    );
+  res.cookie("Authentication", token, {
+    maxAge: 3600,
+    httpOnly: true,
+    sameSite: true,
+  });
 
   return response(
-    { data: user, statusCode: 200, message: "Login access granted" },
+    { data: existingUser, statusCode: 200, message: "Login access granted" },
     res
   );
 };

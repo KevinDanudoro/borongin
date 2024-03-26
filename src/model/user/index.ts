@@ -20,10 +20,6 @@ const userSchema = new mongoose.Schema(
         type: String,
         select: false,
       },
-      sessionToken: {
-        type: String,
-        select: false,
-      },
     },
   },
   {

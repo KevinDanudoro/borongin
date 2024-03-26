@@ -8,6 +8,7 @@ import compression from "compression";
 import cors from "cors";
 import mongoose from "mongoose";
 import router from "./router";
+import { authorization, errorHandler } from "./middleware";
 
 const app = express();
 
@@ -15,6 +16,8 @@ app.use(cors({ credentials: true }));
 app.use(compression());
 app.use(cookieParser());
 app.use(bodyParser.json());
+
+app.use(authorization);
 
 app.get("/", (req, res) => {
   res.send("Haloo");
@@ -30,3 +33,4 @@ mongoose.connect(process.env.MONGODB_URL || "");
 mongoose.connection.on("error", (error: Error) => console.log({ error }));
 
 app.use("/", router());
+app.use(errorHandler);
