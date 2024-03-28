@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { response } from "../helpers/response";
 import { jwtUserSchema } from "../schema/user";
 
-const publicApi = ["/auth/signup", "/auth/signin"];
+const publicApi = ["/auth/signup", "/auth/signin", "/"];
 
 export const authorization = (
   req: express.Request,
