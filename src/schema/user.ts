@@ -1,23 +1,12 @@
 import z from "zod";
 
-const authentication = z.object({
-  password: z.string().min(8),
-  salt: z.string().nullish(),
-});
-
-export const userSchema = z.object({
-  username: z.string().min(1),
-  email: z.string().email().min(1),
-  authentication,
-});
-
-export const createUserSchema = z.object({
+export const signUpUserSchema = z.object({
   username: z.string().min(1),
   email: z.string().email().min(1),
   password: z.string().min(8),
 });
 
-export const readUserSchema = z.object({
+export const signInUserSchema = z.object({
   email: z.string().email().min(1),
   password: z.string().min(8),
 });
@@ -30,4 +19,4 @@ export const jwtUserSchema = z.object({
   exp: z.number(),
 });
 
-export type CreateUserType = z.infer<typeof createUserSchema>;
+export type CreateUserType = z.infer<typeof signUpUserSchema>;

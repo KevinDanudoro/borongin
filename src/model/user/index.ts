@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -21,6 +21,28 @@ const userSchema = new mongoose.Schema(
         select: false,
       },
     },
+    wishlist: [
+      {
+        productId: Schema.ObjectId,
+        name: String,
+        desc: String,
+        price: Number,
+        rating: Number,
+        imageUrl: String,
+        sold: Number,
+      },
+    ],
+    cart: [
+      {
+        productId: Schema.ObjectId,
+        name: String,
+        desc: String,
+        price: Number,
+        rating: Number,
+        imageUrl: String,
+        sold: Number,
+      },
+    ],
   },
   {
     timestamps: true,

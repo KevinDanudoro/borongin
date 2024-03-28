@@ -2,11 +2,11 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { authentication, generateSalt } from "../helpers/hashing";
 import { createUser, getUserByEmail } from "../model/user/action";
-import { createUserSchema, readUserSchema } from "../schema/user";
+import { signUpUserSchema, signInUserSchema } from "../schema/user";
 import { response } from "../helpers/response";
 
 export const signup = async (req: express.Request, res: express.Response) => {
-  const user = createUserSchema.safeParse(req.body);
+  const user = signUpUserSchema.safeParse(req.body);
   if (!user.success)
     return response(
       { data: user.error, statusCode: 400, message: "Bad request" },
@@ -46,7 +46,7 @@ export const signup = async (req: express.Request, res: express.Response) => {
 };
 
 export const signin = async (req: express.Request, res: express.Response) => {
-  const user = readUserSchema.safeParse(req.body);
+  const user = signInUserSchema.safeParse(req.body);
   if (!user.success)
     return response(
       { data: user.error, statusCode: 400, message: "Bad request" },
