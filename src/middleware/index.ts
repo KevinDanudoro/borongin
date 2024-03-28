@@ -1,8 +1,9 @@
 import express from "express";
+import jwt from "jsonwebtoken";
 import { response } from "../helpers/response";
-import { verifyToken } from "../helpers/jwt";
+import { jwtUserSchema } from "../schema/user";
 
-const publicUrl = ["/auth/signup", "/auth/signin"];
+const publicApi = ["/auth/signup", "/auth/signin"];
 
 export const authorization = (
   req: express.Request,
@@ -10,25 +11,54 @@ export const authorization = (
   next: express.NextFunction
 ) => {
   const token = req.cookies["Authentication"];
+  const isPublic = publicApi.includes(req.originalUrl);
+  if (isPublic) return next();
 
-  const verifiedToken = verifyToken(token);
-  if (!verifiedToken.data)
+  if (!token)
     return response(
-      {
-        data: null,
-        statusCode: verifiedToken.statusCode,
-        message: verifiedToken.message,
-      },
+      { data: null, statusCode: 401, message: "Unauthorized user" },
       res
     );
-  return next();
+
+  try {
+    const decodeToken = jwt.verify(token, process.env.SECRET || "");
+    const parsedToken = jwtUserSchema.safeParse(decodeToken);
+
+    if (!parsedToken.success)
+      return response(
+        {
+          statusCode: 403,
+          message: "Token is invalid",
+          data: null,
+        },
+        res
+      );
+
+    req.session = {
+      username: parsedToken.data.username,
+      email: parsedToken.data.email,
+    };
+    next();
+  } catch (error) {
+    if (error instanceof Error)
+      return response(
+        {
+          data: null,
+          message: error.message,
+          statusCode: 403,
+        },
+        res
+      );
+
+    throw new Error("Something went wrong");
+  }
 };
 
 export const errorHandler = (
   err: express.Errback,
-  req: express.Request,
+  _: express.Request,
   res: express.Response,
-  next: express.NextFunction
+  __: express.NextFunction
 ) => {
   return response(
     { data: null, statusCode: 500, message: err.toString() },

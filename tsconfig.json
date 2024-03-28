@@ -7,7 +7,12 @@
     "baseUrl": "src",
     "outDir": "./dist",
     "sourceMap": true,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "typeRoots": ["./src/@types", "./node_modules/@types"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts"],
+  "files": [
+    "./src/@types/session.d.ts",
+    "./node_modules/@types/node/index.d.ts"
+  ]
 }
