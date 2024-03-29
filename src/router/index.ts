@@ -1,7 +1,7 @@
 import express from "express";
 import auth from "./auth.router";
 import product from "./product.router";
-import user from "./user.router";
+import user from "./wishlist.router";
 
 const router = express.Router();
 

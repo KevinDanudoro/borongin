@@ -12,5 +12,14 @@ export const deleteUserById = (id: string) => UserModel.findByIdAndDelete(id);
 export const updateUserById = (id: string, newUser: Record<string, any>) =>
   UserModel.findByIdAndUpdate(id, newUser);
 
-export const addWishlist = (email: string, product: Record<string, any>) =>
-  UserModel.findOneAndUpdate({ email }, { $push: { wishlist: product } });
+export const addWishlist = (email: string, productId: string) =>
+  UserModel.findOneAndUpdate({ email }, { $push: { wishlist: productId } });
+export const removeWishlist = (email: string, productId: string) =>
+  UserModel.findOneAndUpdate(
+    { email },
+    {
+      $pull: {
+        wishlist: productId,
+      },
+    }
+  );

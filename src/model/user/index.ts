@@ -23,24 +23,23 @@ const userSchema = new mongoose.Schema(
     },
     wishlist: [
       {
-        productId: Schema.ObjectId,
-        name: String,
-        desc: String,
-        price: Number,
-        rating: Number,
-        imageUrl: String,
-        sold: Number,
+        type: Schema.ObjectId,
+        ref: "Product",
+        select: false,
       },
     ],
     cart: [
       {
-        productId: Schema.ObjectId,
-        name: String,
-        desc: String,
-        price: Number,
-        rating: Number,
-        imageUrl: String,
-        sold: Number,
+        count: {
+          type: Number,
+          default: 0,
+          select: false,
+        },
+        product: {
+          type: Schema.ObjectId,
+          ref: "Product",
+          select: false,
+        },
       },
     ],
   },
