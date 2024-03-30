@@ -2,7 +2,7 @@ import express from "express";
 import { response } from "../helpers/response";
 import { getUserByEmail, updateUserByEmail } from "../model/user/action";
 
-export const addWishlistController = async (
+export const addCartController = async (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
@@ -22,7 +22,10 @@ export const addWishlistController = async (
     );
 
   try {
-    const user = await getUserByEmail(userEmail).select({ wishlist: 1 });
+    const user = await getUserByEmail(userEmail).select({
+      "cart.quantity": 1,
+      "cart.product": 1,
+    });
     if (!user)
       return response(
         {
@@ -33,28 +36,28 @@ export const addWishlistController = async (
         res
       );
 
-    const { wishlist } = user;
-    const isInclude = wishlist.includes(productId);
-    if (isInclude)
-      return response(
-        {
-          data: null,
-          statusCode: 400,
-          message: "Product already in wishlist",
-        },
-        res
-      );
+    const cartIndex = user.cart.findIndex(
+      (c) => c.product?._id.toString() === productId
+    );
 
-    user.wishlist.push(productId);
+    if (cartIndex >= 0) {
+      const quantity = user.cart.at(cartIndex)?.quantity ?? 1;
+      user.cart.set(cartIndex, {
+        quantity: quantity + 1,
+        product: productId,
+      });
+    } else {
+      user.cart.push({ quantity: 1, product: productId });
+    }
+
     const dbUser = await updateUserByEmail(userEmail, user);
-    if (!dbUser)
-      throw new Error(`Failed add wishlists to user with email ${userEmail}`);
+    if (!dbUser) throw new Error("Failed adding product to user cart");
 
     return response(
       {
         data: dbUser,
         statusCode: 200,
-        message: "Successfully add wishlists to user with email " + userEmail,
+        message: "Successfully adding product to user cart",
       },
       res
     );
@@ -63,7 +66,7 @@ export const addWishlistController = async (
   }
 };
 
-export const removeWishlistController = async (
+export const removeCartController = async (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
@@ -83,7 +86,10 @@ export const removeWishlistController = async (
     );
 
   try {
-    const user = await getUserByEmail(userEmail).select({ wishlist: 1 });
+    const user = await getUserByEmail(userEmail).select({
+      "cart.product": 1,
+      "cart.quantity": 1,
+    });
     if (!user)
       return response(
         {
@@ -94,25 +100,33 @@ export const removeWishlistController = async (
         res
       );
 
-    const wishlistIndex = user.wishlist.findIndex(
-      (u) => u._id.toString() === productId
+    const cartIndex = user.cart.findIndex(
+      (u) => u.product._id.toString() === productId
     );
-    if (wishlistIndex < 0)
+    const quantity = user.cart[cartIndex].quantity;
+
+    if (cartIndex >= 0 && quantity > 1) {
+      user.cart.set(cartIndex, {
+        quantity: quantity - 1,
+        product: productId,
+      });
+    } else if (cartIndex >= 0 && quantity === 1) {
+      user.cart.splice(cartIndex, 1);
+    } else {
       return response(
         {
           data: null,
           statusCode: 404,
-          message: "Product not found in wishlist",
+          message: "Product not found in user cart",
         },
         res
       );
-
-    user.wishlist.splice(wishlistIndex, 1);
+    }
 
     const dbUser = await updateUserByEmail(userEmail, user);
     if (!dbUser)
       throw new Error(
-        `Failed remove wishlists from user with email ${userEmail}`
+        `Failed remove product from user cart with email ${userEmail}`
       );
 
     return response(
@@ -120,7 +134,7 @@ export const removeWishlistController = async (
         data: dbUser,
         statusCode: 200,
         message:
-          "Successfully remove wishlists from user with email " + userEmail,
+          "Successfully remove product from user cart with email " + userEmail,
       },
       res
     );

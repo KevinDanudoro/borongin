@@ -1,4 +1,5 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose from "mongoose";
+import { User, UserModelType } from "./types";
 
 const userSchema = new mongoose.Schema(
   {
@@ -9,6 +10,7 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       required: true,
+      unique: true,
     },
     authentication: {
       password: {
@@ -23,20 +25,20 @@ const userSchema = new mongoose.Schema(
     },
     wishlist: [
       {
-        type: Schema.ObjectId,
+        type: mongoose.Types.ObjectId,
         ref: "Product",
         select: false,
       },
     ],
     cart: [
       {
-        count: {
+        quantity: {
           type: Number,
           default: 0,
           select: false,
         },
         product: {
-          type: Schema.ObjectId,
+          type: mongoose.Types.ObjectId,
           ref: "Product",
           select: false,
         },
@@ -48,4 +50,7 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-export const UserModel = mongoose.model("User", userSchema);
+export const UserModel = mongoose.model<User, UserModelType>(
+  "User",
+  userSchema
+);
