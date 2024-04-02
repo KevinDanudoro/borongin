@@ -1,16 +1,29 @@
+import { Product } from "../product/types";
 import mongoose from "mongoose";
 
-export interface User extends mongoose.Document {
+interface UserCart {
+  cart: mongoose.Types.Array<{
+    quantity: number;
+    product: mongoose.Types.ObjectId;
+  }>;
+}
+
+interface UserWishlist {
+  wishlist: mongoose.Types.Array<mongoose.Types.ObjectId>;
+}
+
+export interface User extends mongoose.Document, UserCart, UserWishlist {
   username: string;
   email: string;
   authentication: {
     password: string;
     salt: string;
   };
-  wishlist: mongoose.Types.Array<mongoose.Types.ObjectId>;
+}
+export interface PopulatedUserCart {
   cart: mongoose.Types.Array<{
     quantity: number;
-    product: mongoose.Types.ObjectId;
+    product: Product;
   }>;
 }
 
