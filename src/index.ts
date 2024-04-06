@@ -7,6 +7,7 @@ import bodyParser from "body-parser";
 import compression from "compression";
 import cors from "cors";
 import mongoose from "mongoose";
+
 import router from "./router";
 import { authorization, errorHandler } from "./middleware";
 
@@ -17,7 +18,7 @@ app.use(compression());
 app.use(cookieParser());
 app.use(bodyParser.json());
 
-app.use(authorization);
+// app.use(authorization);
 
 app.get("/", (req, res) => {
   res.send("Haloo");

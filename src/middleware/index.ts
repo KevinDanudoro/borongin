@@ -1,5 +1,10 @@
 import express from "express";
+import multer from "multer";
+import path from "path";
+import crypto from "crypto";
+import fs from "fs";
 import jwt from "jsonwebtoken";
+
 import { response } from "../helpers/response";
 import { jwtUserSchema } from "../schema/user";
 
@@ -65,3 +70,9 @@ export const errorHandler = (
     res
   );
 };
+
+const storage = multer.memoryStorage();
+export const upload = multer({
+  storage,
+  limits: { files: 10, fileSize: 1 * 1024 * 1024 },
+});
