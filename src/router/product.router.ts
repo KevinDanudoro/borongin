@@ -9,12 +9,12 @@ import {
 import express from "express";
 
 export default (router: express.Router) => {
-  router.post("/product", createProductController);
+  router.post("/product", upload.array("images"), createProductController);
   router.get("/product", getProductsController);
   router.get("/product/:id", getProductByIdController);
   router.put(
     "/product/:id",
-    upload.array("image"),
+    upload.array("images"),
     updateProductByIdController
   );
   router.delete("/product/:id", deleteProductByIdController);

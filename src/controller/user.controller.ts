@@ -1,7 +1,12 @@
 import express from "express";
-import { getUserByEmail, updateUserByEmail } from "../model/user/action";
+import {
+  deleteUserById,
+  getUserByEmail,
+  updateUserByEmail,
+} from "../model/user/action";
 import { updateUserSchema } from "../schema/user";
 import { response } from "../helpers/response";
+import { uploadToCloudinary } from "../helpers/cloudinary";
 
 export const updateUserController = async (
   req: express.Request,
@@ -9,6 +14,7 @@ export const updateUserController = async (
   next: express.NextFunction
 ) => {
   const userEmail = req.session?.email;
+  console.log(req.session);
   if (!userEmail)
     return response(
       { data: null, statusCode: 403, message: "User session not found" },
@@ -24,15 +30,56 @@ export const updateUserController = async (
 
   try {
     const exisistingUser = await getUserByEmail(userEmail);
-    if (exisistingUser)
+    if (!exisistingUser)
       return response(
-        { data: null, statusCode: 400, message: "Email already used" },
+        { data: null, statusCode: 404, message: "User not found" },
         res
       );
 
-    const dbUser = await updateUserByEmail(userEmail, user.data);
+    const image = req.file as { buffer: Buffer };
+    const uploadPromise = uploadToCloudinary([image], { folder: "user" });
+    const uploadUrl = await Promise.all(uploadPromise);
+
+    const dbUser = await updateUserByEmail(userEmail, {
+      ...user.data,
+      image: uploadUrl[0],
+    });
     return response(
       { data: dbUser, message: "User successfuly updated", statusCode: 201 },
+      res
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteUserController = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  const userEmail = req.session?.email;
+  if (!userEmail)
+    return response(
+      { data: null, statusCode: 403, message: "User session not found" },
+      res
+    );
+
+  try {
+    const exisistingUser = await getUserByEmail(userEmail);
+    const deletedUser = await deleteUserById(exisistingUser?._id);
+    if (!deletedUser)
+      return response(
+        { data: null, statusCode: 500, message: "Failed to delete user" },
+        res
+      );
+
+    return response(
+      {
+        data: deletedUser,
+        statusCode: 200,
+        message: "Successfully delete user",
+      },
       res
     );
   } catch (error) {

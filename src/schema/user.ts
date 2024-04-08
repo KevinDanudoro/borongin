@@ -21,7 +21,6 @@ export const jwtUserSchema = z.object({
 
 export const updateUserSchema = z.object({
   username: z.string().min(1),
-  email: z.string().email().min(1),
 });
 
 export type CreateUserType = z.infer<typeof signUpUserSchema>;

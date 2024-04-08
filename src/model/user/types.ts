@@ -7,6 +7,12 @@ interface UserCart {
     product: mongoose.Types.ObjectId;
   }>;
 }
+export interface PopulatedUserCart {
+  cart: mongoose.Types.Array<{
+    quantity: number;
+    product: Product;
+  }>;
+}
 
 interface UserWishlist {
   wishlist: mongoose.Types.Array<mongoose.Types.ObjectId>;
@@ -15,16 +21,11 @@ interface UserWishlist {
 export interface User extends mongoose.Document, UserCart, UserWishlist {
   username: string;
   email: string;
+  image?: string;
   authentication: {
     password: string;
     salt: string;
   };
-}
-export interface PopulatedUserCart {
-  cart: mongoose.Types.Array<{
-    quantity: number;
-    product: Product;
-  }>;
 }
 
 export type UserModelType = mongoose.Model<User>;

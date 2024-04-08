@@ -1,5 +1,4 @@
 import express from "express";
-import cloudinary from "cloudinary";
 import { response } from "../helpers/response";
 import { createProductSchema, updateProductSchema } from "../schema/product";
 import {
@@ -9,6 +8,7 @@ import {
   getProducts,
   updateProductById,
 } from "../model/product/action";
+import { uploadToCloudinary } from "../helpers/cloudinary";
 
 export const createProductController = async (
   req: express.Request,
@@ -22,26 +22,14 @@ export const createProductController = async (
       res
     );
 
-  const files = req.files as Array<any>;
-  const uploadPromise = files.map(
-    (file) =>
-      new Promise<cloudinary.UploadApiResponse | undefined>((resolve) =>
-        cloudinary.v2.uploader
-          .upload_stream({ folder: "product" }, (_, uploadResult) => {
-            return resolve(uploadResult);
-          })
-          .end(file.buffer)
-      )
-  );
+  const productImage = req.files as Array<any>;
+  const uploadPromise = uploadToCloudinary(productImage, { folder: "product" });
 
   try {
-    const uploadResult = await Promise.all(uploadPromise);
-    const uploadedImageUrl = uploadResult
-      .map((r) => r?.secure_url)
-      .filter((r) => r !== undefined);
+    const uploadUrl = await Promise.all(uploadPromise);
     const dbProduct = await createProduct({
       ...product.data,
-      imageUrl: uploadedImageUrl,
+      imageUrl: uploadUrl,
     });
     return response(
       {
@@ -124,26 +112,14 @@ export const updateProductByIdController = async (
       res
     );
 
-  const files = req.files as Array<any>;
-  const uploadPromise = files.map(
-    (file) =>
-      new Promise<cloudinary.UploadApiResponse | undefined>((resolve) =>
-        cloudinary.v2.uploader
-          .upload_stream({ folder: "product" }, (_, uploadResult) => {
-            return resolve(uploadResult);
-          })
-          .end(file.buffer)
-      )
-  );
+  const productImage = req.files as Array<any>;
+  const uploadPromise = uploadToCloudinary(productImage, { folder: "product" });
 
   try {
-    const uploadResult = await Promise.all(uploadPromise);
-    const uploadedImageUrl = uploadResult
-      .map((r) => r?.secure_url)
-      .filter((r) => r !== undefined);
+    const uploadUrl = await Promise.all(uploadPromise);
     const dbProduct = await updateProductById(id, {
       ...updatedProduct.data,
-      imageUrl: uploadedImageUrl,
+      imageUrl: uploadUrl,
     });
     return response(
       {

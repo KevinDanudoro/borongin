@@ -18,7 +18,7 @@ app.use(compression());
 app.use(cookieParser());
 app.use(bodyParser.json());
 
-// app.use(authorization);
+app.use(authorization);
 
 app.get("/", (req, res) => {
   res.send("Haloo");
