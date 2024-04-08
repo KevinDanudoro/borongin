@@ -95,6 +95,8 @@ export const getProductByIdController = async (
   }
 };
 
+// TODO: Handle penambahan / pengurangan gambar produk
+//? Apakah sebaiknya cloudinary terhubung dengan nextjs?
 export const updateProductByIdController = async (
   req: express.Request,
   res: express.Response,

@@ -4,9 +4,11 @@ import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
+import helmet from "helmet";
 import compression from "compression";
 import cors from "cors";
 import mongoose from "mongoose";
+import { rateLimit } from "express-rate-limit";
 
 import router from "./router";
 import { authorization, errorHandler } from "./middleware";
@@ -16,11 +18,13 @@ const app = express();
 app.use(cors({ credentials: true }));
 app.use(compression());
 app.use(cookieParser());
+app.use(helmet());
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 50 }));
 app.use(bodyParser.json());
 
 app.use(authorization);
 
-app.get("/", (req, res) => {
+app.get("/", (_, res) => {
   res.send("Haloo");
 });
 
