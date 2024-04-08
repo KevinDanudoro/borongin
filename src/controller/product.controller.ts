@@ -8,7 +8,10 @@ import {
   getProducts,
   updateProductById,
 } from "../model/product/action";
-import { uploadToCloudinary } from "../helpers/cloudinary";
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../helpers/cloudinary";
 
 export const createProductController = async (
   req: express.Request,
@@ -22,11 +25,11 @@ export const createProductController = async (
       res
     );
 
-  const productImage = req.files as Array<any>;
-  const uploadPromise = uploadToCloudinary(productImage, { folder: "product" });
-
   try {
-    const uploadUrl = await Promise.all(uploadPromise);
+    const productImage = req.files as Array<any>;
+    const uploadUrl = await uploadToCloudinary(productImage, {
+      folder: "product",
+    });
     const dbProduct = await createProduct({
       ...product.data,
       imageUrl: uploadUrl,
@@ -51,6 +54,7 @@ export const getProductsController = async (
 ) => {
   try {
     const dbProducts = await getProducts();
+
     return response(
       {
         data: dbProducts,
@@ -112,11 +116,11 @@ export const updateProductByIdController = async (
       res
     );
 
-  const productImage = req.files as Array<any>;
-  const uploadPromise = uploadToCloudinary(productImage, { folder: "product" });
-
   try {
-    const uploadUrl = await Promise.all(uploadPromise);
+    const productImage = req.files as Array<any>;
+    const uploadUrl = await uploadToCloudinary(productImage, {
+      folder: "product",
+    });
     const dbProduct = await updateProductById(id, {
       ...updatedProduct.data,
       imageUrl: uploadUrl,
@@ -148,6 +152,10 @@ export const deleteProductByIdController = async (
 
   try {
     const dbProduct = await deleteProductById(id);
+    const isDelSuccess = await deleteFromCloudinary(dbProduct?.imageUrl ?? []);
+    if (!isDelSuccess)
+      throw new Error("Failed delete product image from cloud");
+
     return response(
       {
         data: dbProduct,

@@ -6,7 +6,10 @@ import {
 } from "../model/user/action";
 import { updateUserSchema } from "../schema/user";
 import { response } from "../helpers/response";
-import { uploadToCloudinary } from "../helpers/cloudinary";
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../helpers/cloudinary";
 
 export const updateUserController = async (
   req: express.Request,
@@ -37,8 +40,7 @@ export const updateUserController = async (
       );
 
     const image = req.file as { buffer: Buffer };
-    const uploadPromise = uploadToCloudinary([image], { folder: "user" });
-    const uploadUrl = await Promise.all(uploadPromise);
+    const uploadUrl = await uploadToCloudinary([image], { folder: "user" });
 
     const dbUser = await updateUserByEmail(userEmail, {
       ...user.data,
@@ -73,6 +75,12 @@ export const deleteUserController = async (
         { data: null, statusCode: 500, message: "Failed to delete user" },
         res
       );
+
+    if (deletedUser.image) {
+      const isDelSuccess = await deleteFromCloudinary([deletedUser.image]);
+      if (!isDelSuccess)
+        throw new Error("Failed delete product image from cloud");
+    }
 
     return response(
       {
