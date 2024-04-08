@@ -10,7 +10,7 @@ export const addCartController = async (
   const userEmail = req.session?.email;
   if (!userEmail)
     return response(
-      { data: null, statusCode: 404, message: "User session not found" },
+      { data: null, statusCode: 403, message: "User session not found" },
       res
     );
 
@@ -74,7 +74,7 @@ export const removeCartController = async (
   const userEmail = req.session?.email;
   if (!userEmail)
     return response(
-      { data: null, statusCode: 404, message: "User session not found" },
+      { data: null, statusCode: 403, message: "User session not found" },
       res
     );
 

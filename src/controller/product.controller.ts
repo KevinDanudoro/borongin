@@ -57,7 +57,7 @@ export const createProductController = async (
 };
 
 export const getProductsController = async (
-  req: express.Request,
+  _: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) => {

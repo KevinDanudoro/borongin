@@ -33,8 +33,7 @@ export const addWishlistController = async (
         res
       );
 
-    const { wishlist } = user;
-    const isInclude = wishlist.includes(productId);
+    const isInclude = user.wishlist.includes(productId);
     if (isInclude)
       return response(
         {

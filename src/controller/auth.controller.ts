@@ -9,7 +9,7 @@ export const signup = async (req: express.Request, res: express.Response) => {
   const user = signUpUserSchema.safeParse(req.body);
   if (!user.success)
     return response(
-      { data: user.error, statusCode: 400, message: "Bad request" },
+      { data: user.error, statusCode: 400, message: "Bad user schema" },
       res
     );
 
@@ -49,7 +49,7 @@ export const signin = async (req: express.Request, res: express.Response) => {
   const user = signInUserSchema.safeParse(req.body);
   if (!user.success)
     return response(
-      { data: user.error, statusCode: 400, message: "Bad request" },
+      { data: user.error, statusCode: 400, message: "Bad user schema" },
       res
     );
 
@@ -63,7 +63,7 @@ export const signin = async (req: express.Request, res: express.Response) => {
     !existingUser?.authentication?.salt
   ) {
     return response(
-      { data: null, statusCode: 500, message: "Internal server error" },
+      { data: null, statusCode: 500, message: "User credential not found" },
       res
     );
   }
