@@ -11,5 +11,6 @@
     "typeRoots": ["src/types", "./node_modules/@types"]
   },
   "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"],
   "files": ["src/types/session.d.ts", "./node_modules/@types/node/index.d.ts"]
 }
