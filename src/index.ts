@@ -15,7 +15,13 @@ import { authorization, errorHandler } from "./middleware";
 
 const app = express();
 
-app.use(cors({ credentials: true }));
+app.use(
+  cors({
+    credentials: true,
+    origin: "http://localhost:3000",
+    optionsSuccessStatus: 200,
+  })
+);
 app.use(compression());
 app.use(cookieParser());
 app.use(helmet());
