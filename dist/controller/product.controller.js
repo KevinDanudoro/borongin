@@ -66,9 +66,8 @@ const getProductByIdController = (req, res, next) => __awaiter(void 0, void 0, v
     }
 });
 exports.getProductByIdController = getProductByIdController;
-// TODO: Handle penambahan / pengurangan gambar produk
-//? Apakah sebaiknya cloudinary terhubung dengan nextjs?
 const updateProductByIdController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { id } = req.params;
     if (!id)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
@@ -76,11 +75,22 @@ const updateProductByIdController = (req, res, next) => __awaiter(void 0, void 0
     if (!updatedProduct.success)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Bad product schema" }, res);
     try {
+        const existingProduct = yield (0, action_1.getProductById)(id);
+        if (!existingProduct)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "Product not found",
+            }, res);
+        const isDelSuccess = yield (0, cloudinary_1.deleteFromCloudinary)((_a = updatedProduct.data.deleteImages) !== null && _a !== void 0 ? _a : []);
+        if (!isDelSuccess)
+            throw new Error("Failed to delete resource from cloud");
+        const imageUrlAfterDeletion = existingProduct.imageUrl.filter((img) => { var _a; return !((_a = updatedProduct.data.deleteImages) === null || _a === void 0 ? void 0 : _a.includes(img)); });
         const productImage = req.files;
         const uploadUrl = yield (0, cloudinary_1.uploadToCloudinary)(productImage, {
             folder: "product",
         });
-        const dbProduct = yield (0, action_1.updateProductById)(id, Object.assign(Object.assign({}, updatedProduct.data), { imageUrl: uploadUrl }));
+        const dbProduct = yield (0, action_1.updateProductById)(id, Object.assign(Object.assign({}, updatedProduct.data), { imageUrl: [...uploadUrl, ...imageUrlAfterDeletion] }));
         return (0, response_1.response)({
             data: dbProduct,
             statusCode: 201,
@@ -93,15 +103,15 @@ const updateProductByIdController = (req, res, next) => __awaiter(void 0, void 0
 });
 exports.updateProductByIdController = updateProductByIdController;
 const deleteProductByIdController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _b;
     const { id } = req.params;
     if (!id)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
         const dbProduct = yield (0, action_1.deleteProductById)(id);
-        const isDelSuccess = yield (0, cloudinary_1.deleteFromCloudinary)((_a = dbProduct === null || dbProduct === void 0 ? void 0 : dbProduct.imageUrl) !== null && _a !== void 0 ? _a : []);
+        const isDelSuccess = yield (0, cloudinary_1.deleteFromCloudinary)((_b = dbProduct === null || dbProduct === void 0 ? void 0 : dbProduct.imageUrl) !== null && _b !== void 0 ? _b : []);
         if (!isDelSuccess)
-            throw new Error("Failed delete product image from cloud");
+            throw new Error("Failed delete resource from cloud");
         return (0, response_1.response)({
             data: dbProduct,
             statusCode: 200,

@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteFromCloudinary = exports.uploadToCloudinary = void 0;
 const cloudinary_1 = __importDefault(require("cloudinary"));
 const uploadToCloudinary = (files, options) => {
+    if (files.length === 0)
+        return Promise.resolve([]);
     const uploadPromise = files.map((file) => new Promise((resolve) => cloudinary_1.default.v2.uploader
         .upload_stream(options, (_, uploadResult) => {
         return resolve(uploadResult === null || uploadResult === void 0 ? void 0 : uploadResult.secure_url);
@@ -24,13 +26,15 @@ const uploadToCloudinary = (files, options) => {
 };
 exports.uploadToCloudinary = uploadToCloudinary;
 const deleteFromCloudinary = (urls) => __awaiter(void 0, void 0, void 0, function* () {
+    if (urls.length === 0)
+        return true;
     const deletePromise = urls.map((url) => new Promise((resolve) => {
         const publicId = url.split("/").slice(-2).join("/").split(".")[0];
         cloudinary_1.default.v2.uploader.destroy(publicId).then((res) => resolve(res));
     }));
     const response = yield Promise.all(deletePromise);
     const isSuccess = response.filter((res) => res.result === "ok").length === urls.length;
-    return { success: isSuccess };
+    return isSuccess;
 });
 exports.deleteFromCloudinary = deleteFromCloudinary;
 //# sourceMappingURL=cloudinary.js.map

@@ -17,7 +17,6 @@ export const updateUserController = async (
   next: express.NextFunction
 ) => {
   const userEmail = req.session?.email;
-  console.log(req.session);
   if (!userEmail)
     return response(
       { data: null, statusCode: 403, message: "User session not found" },
@@ -38,6 +37,11 @@ export const updateUserController = async (
         { data: null, statusCode: 404, message: "User not found" },
         res
       );
+
+    const isDelSuccess = await deleteFromCloudinary(
+      exisistingUser.image ? [exisistingUser.image] : []
+    );
+    if (!isDelSuccess) throw new Error("Failed delete resource from cloud");
 
     const image = req.file as { buffer: Buffer };
     const uploadUrl = await uploadToCloudinary([image], { folder: "user" });
@@ -69,18 +73,24 @@ export const deleteUserController = async (
 
   try {
     const exisistingUser = await getUserByEmail(userEmail);
+    if (!exisistingUser)
+      return response(
+        { data: null, statusCode: 404, message: "User not found" },
+        res
+      );
+
+    if (exisistingUser.image) {
+      const isDelSuccess = await deleteFromCloudinary([exisistingUser.image]);
+      if (!isDelSuccess)
+        throw new Error("Failed delete product image from cloud");
+    }
+
     const deletedUser = await deleteUserById(exisistingUser?._id);
     if (!deletedUser)
       return response(
         { data: null, statusCode: 500, message: "Failed to delete user" },
         res
       );
-
-    if (deletedUser.image) {
-      const isDelSuccess = await deleteFromCloudinary([deletedUser.image]);
-      if (!isDelSuccess)
-        throw new Error("Failed delete product image from cloud");
-    }
 
     return response(
       {

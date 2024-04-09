@@ -95,8 +95,6 @@ export const getProductByIdController = async (
   }
 };
 
-// TODO: Handle penambahan / pengurangan gambar produk
-//? Apakah sebaiknya cloudinary terhubung dengan nextjs?
 export const updateProductByIdController = async (
   req: express.Request,
   res: express.Response,
@@ -119,13 +117,33 @@ export const updateProductByIdController = async (
     );
 
   try {
+    const existingProduct = await getProductById(id);
+    if (!existingProduct)
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "Product not found",
+        },
+        res
+      );
+
+    const isDelSuccess = await deleteFromCloudinary(
+      updatedProduct.data.deleteImages ?? []
+    );
+    if (!isDelSuccess) throw new Error("Failed to delete resource from cloud");
+    const imageUrlAfterDeletion = existingProduct.imageUrl.filter(
+      (img) => !updatedProduct.data.deleteImages?.includes(img)
+    );
+
     const productImage = req.files as Array<any>;
     const uploadUrl = await uploadToCloudinary(productImage, {
       folder: "product",
     });
+
     const dbProduct = await updateProductById(id, {
       ...updatedProduct.data,
-      imageUrl: uploadUrl,
+      imageUrl: [...uploadUrl, ...imageUrlAfterDeletion],
     });
     return response(
       {
@@ -155,8 +173,7 @@ export const deleteProductByIdController = async (
   try {
     const dbProduct = await deleteProductById(id);
     const isDelSuccess = await deleteFromCloudinary(dbProduct?.imageUrl ?? []);
-    if (!isDelSuccess)
-      throw new Error("Failed delete product image from cloud");
+    if (!isDelSuccess) throw new Error("Failed delete resource from cloud");
 
     return response(
       {

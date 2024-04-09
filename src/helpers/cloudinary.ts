@@ -3,7 +3,9 @@ import cloudinary from "cloudinary";
 export const uploadToCloudinary = (
   files: Array<{ buffer: Buffer }>,
   options: { folder: string }
-) => {
+): Promise<(string | undefined)[]> => {
+  if (files.length === 0) return Promise.resolve([]);
+
   const uploadPromise = files.map(
     (file) =>
       new Promise<string | undefined>((resolve) =>
@@ -19,6 +21,8 @@ export const uploadToCloudinary = (
 };
 
 export const deleteFromCloudinary = async (urls: Array<string>) => {
+  if (urls.length === 0) return true;
+
   const deletePromise = urls.map(
     (url) =>
       new Promise<{ result: string }>((resolve) => {
@@ -31,5 +35,5 @@ export const deleteFromCloudinary = async (urls: Array<string>) => {
   const isSuccess =
     response.filter((res) => res.result === "ok").length === urls.length;
 
-  return { success: isSuccess };
+  return isSuccess;
 };
