@@ -87,10 +87,12 @@ export const signin = async (req: express.Request, res: express.Response) => {
     process.env.SECRET || "",
     { expiresIn: 3600 }
   );
-  res.cookie("Authentication", token, {
+  res.cookie("Authorization", token, {
     maxAge: 3600,
     httpOnly: true,
     sameSite: true,
+    secure: false,
+    domain: process.env.FRONTEND_URL,
   });
 
   return response(
