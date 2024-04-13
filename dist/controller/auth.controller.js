@@ -64,7 +64,7 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     res.cookie("Authorization", token, {
         maxAge: 3600,
         httpOnly: true,
-        sameSite: true,
+        sameSite: "lax",
         secure: false,
         domain: process.env.FRONTEND_URL,
     });

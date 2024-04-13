@@ -90,7 +90,7 @@ export const signin = async (req: express.Request, res: express.Response) => {
   res.cookie("Authorization", token, {
     maxAge: 3600,
     httpOnly: true,
-    sameSite: true,
+    sameSite: "lax",
     secure: false,
     domain: process.env.FRONTEND_URL,
   });
