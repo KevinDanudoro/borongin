@@ -66,7 +66,7 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         httpOnly: true,
         sameSite: "lax",
         secure: false,
-        domain: process.env.DOMAIN,
+        domain: "localhost", //process.env.DOMAIN,
     });
     return (0, response_1.response)({ data: existingUser, statusCode: 200, message: "Login access granted" }, res);
 });

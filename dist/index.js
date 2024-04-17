@@ -18,7 +18,7 @@ const middleware_1 = require("./middleware");
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)({
     credentials: true,
-    origin: process.env.FRONTEND_URL,
+    origin: "http://localhost:3001", //process.env.FRONTEND_URL,
     optionsSuccessStatus: 200,
 }));
 app.use((0, compression_1.default)());

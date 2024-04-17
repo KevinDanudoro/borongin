@@ -92,7 +92,7 @@ export const signin = async (req: express.Request, res: express.Response) => {
     httpOnly: true,
     sameSite: "lax",
     secure: false,
-    domain: process.env.DOMAIN,
+    domain: "localhost", //process.env.DOMAIN,
   });
 
   return response(
