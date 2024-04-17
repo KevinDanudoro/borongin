@@ -62,11 +62,11 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         username: existingUser.username,
     }, process.env.SECRET || "", { expiresIn: 3600 });
     res.cookie("Authorization", token, {
-        maxAge: 3600,
+        maxAge: 1000 * 60 * 60,
         httpOnly: true,
         sameSite: "lax",
         secure: false,
-        domain: process.env.FRONTEND_URL,
+        domain: process.env.DOMAIN,
     });
     return (0, response_1.response)({ data: existingUser, statusCode: 200, message: "Login access granted" }, res);
 });

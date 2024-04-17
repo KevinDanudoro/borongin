@@ -5,14 +5,14 @@ import jwt from "jsonwebtoken";
 import { response } from "../helpers/response";
 import { jwtUserSchema } from "../schema/user";
 
-const publicApi = ["/auth/signup", "/auth/signin", "/"];
+const publicApi = ["/auth/signup", "/auth/signin", "/", "/product"];
 
 export const authorization = (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) => {
-  const token = req.cookies["Authentication"];
+  const token = req.cookies["Authorization"];
   const isPublic = publicApi.includes(req.originalUrl);
   if (isPublic) return next();
 
@@ -26,15 +26,18 @@ export const authorization = (
     const decodeToken = jwt.verify(token, process.env.SECRET || "");
     const parsedToken = jwtUserSchema.safeParse(decodeToken);
 
-    if (!parsedToken.success)
+    if (!parsedToken.success) {
+      res.clearCookie("Authorization");
+
       return response(
         {
-          statusCode: 403,
-          message: "Token is invalid",
+          statusCode: 401,
+          message: "Authentication token schema is invalid",
           data: null,
         },
         res
       );
+    }
 
     req.session = {
       username: parsedToken.data.username,
@@ -42,12 +45,14 @@ export const authorization = (
     };
     next();
   } catch (error) {
+    res.clearCookie("Authorization");
+
     if (error instanceof Error)
       return response(
         {
           data: null,
           message: error.message,
-          statusCode: 403,
+          statusCode: 401,
         },
         res
       );

@@ -8,9 +8,9 @@ const multer_1 = __importDefault(require("multer"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const response_1 = require("../helpers/response");
 const user_1 = require("../schema/user");
-const publicApi = ["/auth/signup", "/auth/signin", "/"];
+const publicApi = ["/auth/signup", "/auth/signin", "/", "/product"];
 const authorization = (req, res, next) => {
-    const token = req.cookies["Authentication"];
+    const token = req.cookies["Authorization"];
     const isPublic = publicApi.includes(req.originalUrl);
     if (isPublic)
         return next();
@@ -19,12 +19,14 @@ const authorization = (req, res, next) => {
     try {
         const decodeToken = jsonwebtoken_1.default.verify(token, process.env.SECRET || "");
         const parsedToken = user_1.jwtUserSchema.safeParse(decodeToken);
-        if (!parsedToken.success)
+        if (!parsedToken.success) {
+            res.clearCookie("Authorization");
             return (0, response_1.response)({
-                statusCode: 403,
-                message: "Token is invalid",
+                statusCode: 401,
+                message: "Authentication token schema is invalid",
                 data: null,
             }, res);
+        }
         req.session = {
             username: parsedToken.data.username,
             email: parsedToken.data.email,
@@ -32,11 +34,12 @@ const authorization = (req, res, next) => {
         next();
     }
     catch (error) {
+        res.clearCookie("Authorization");
         if (error instanceof Error)
             return (0, response_1.response)({
                 data: null,
                 message: error.message,
-                statusCode: 403,
+                statusCode: 401,
             }, res);
         throw new Error("Something went wrong");
     }
