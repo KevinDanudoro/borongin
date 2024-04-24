@@ -96,7 +96,15 @@ export const signin = async (req: express.Request, res: express.Response) => {
   });
 
   return response(
-    { data: existingUser, statusCode: 200, message: "Login access granted" },
+    {
+      data: {
+        username: existingUser.username,
+        email: existingUser.email,
+        image: existingUser.image || null,
+      },
+      statusCode: 200,
+      message: "Login access granted",
+    },
     res
   );
 };

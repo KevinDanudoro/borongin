@@ -1,6 +1,12 @@
 import express from "express";
 import { response } from "../helpers/response";
-import { getUserByEmail, updateUserByEmail } from "../model/user/action";
+import { getUserByEmail } from "../model/user/action";
+import { getProductById } from "../model/product/action";
+import {
+  createWishlistByUserId,
+  getWishlistByUserId,
+  updateWishlistByUserId,
+} from "../model/wishlist/action";
 
 export const addWishlistController = async (
   req: express.Request,
@@ -22,7 +28,8 @@ export const addWishlistController = async (
     );
 
   try {
-    const user = await getUserByEmail(userEmail).select({ wishlist: 1 });
+    const user = await getUserByEmail(userEmail);
+    // Pastikan user ada pada DB
     if (!user)
       return response(
         {
@@ -33,7 +40,39 @@ export const addWishlistController = async (
         res
       );
 
-    const isInclude = user.wishlist.includes(productId);
+    const product = await getProductById(productId);
+    //Pastikan productId valid dan ada
+    if (!product)
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "Product not found",
+        },
+        res
+      );
+
+    const userWishlist = await getWishlistByUserId(user._id);
+
+    // Jika user wishlist masih kosong maka buat baru
+    if (!userWishlist) {
+      const createdWishlist = await createWishlistByUserId({
+        user: user._id,
+        product: [productId],
+      });
+      return response(
+        {
+          data: createdWishlist,
+          statusCode: 200,
+          message: "Success adding product to user cart",
+        },
+        res
+      );
+    }
+
+    const isInclude = userWishlist.product.includes(productId);
+
+    // Jika produk ditemukan pada wishlist maka jangan tambah produk ke wishlist
     if (isInclude)
       return response(
         {
@@ -44,16 +83,18 @@ export const addWishlistController = async (
         res
       );
 
-    user.wishlist.push(productId);
-    const dbUser = await updateUserByEmail(userEmail, user);
-    if (!dbUser)
-      throw new Error(`Failed add wishlists to user with email ${userEmail}`);
+    // Jika produk tidak terdapat pada wishlist maka tambahkan ke wishlist
+    userWishlist.product.push(productId);
+    const updatedWishlist = await updateWishlistByUserId(
+      user._id,
+      userWishlist
+    );
 
     return response(
       {
-        data: dbUser,
+        data: updatedWishlist,
         statusCode: 200,
-        message: "Successfully add wishlists to user with email " + userEmail,
+        message: "Successfully add product to user wishlist",
       },
       res
     );
@@ -82,7 +123,8 @@ export const removeWishlistController = async (
     );
 
   try {
-    const user = await getUserByEmail(userEmail).select({ wishlist: 1 });
+    const user = await getUserByEmail(userEmail);
+    // Pastikan user ada pada DB
     if (!user)
       return response(
         {
@@ -93,33 +135,61 @@ export const removeWishlistController = async (
         res
       );
 
-    const wishlistIndex = user.wishlist.findIndex(
-      (u) => u._id.toString() === productId
-    );
-    if (wishlistIndex < 0)
+    const product = await getProductById(productId);
+    //Pastikan productId valid dan ada
+    if (!product)
       return response(
         {
           data: null,
           statusCode: 404,
-          message: "Product not found in wishlist",
+          message: "Product not found",
         },
         res
       );
 
-    user.wishlist.splice(wishlistIndex, 1);
+    const userWishlist = await getWishlistByUserId(user._id);
 
-    const dbUser = await updateUserByEmail(userEmail, user);
-    if (!dbUser)
-      throw new Error(
-        `Failed remove wishlists from user with email ${userEmail}`
+    // Jika user wishlist kosong maka tolak request user
+    if (!userWishlist) {
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "User wishlist is empty",
+        },
+        res
       );
+    }
 
+    // Jika user wishlist ada maka cari index dari produk yang ingin dihapus
+    const wishlistIndex = userWishlist.product.findIndex(
+      (product) => product.toString() === productId
+    );
+
+    // Jika index dari produk yang ingin dihapus ditemukan maka ...
+    if (wishlistIndex > -1) {
+      // Hapus produk dari array / list, lalu update DB
+      userWishlist.product.splice(wishlistIndex, 1);
+      const updatedWishlist = await updateWishlistByUserId(
+        user._id,
+        userWishlist
+      );
+      return response(
+        {
+          data: updatedWishlist,
+          statusCode: 200,
+          message: "Successfully remove product from user wishlist",
+        },
+        res
+      );
+    }
+
+    // Jika index dari produk tidak ditemukan pada wishlist maka hentikan request user
     return response(
       {
-        data: dbUser,
-        statusCode: 200,
-        message:
-          "Successfully remove wishlists from user with email " + userEmail,
+        data: null,
+        statusCode: 404,
+        message: "Product not found in wishlist",
       },
       res
     );

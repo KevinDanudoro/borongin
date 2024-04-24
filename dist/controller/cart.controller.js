@@ -12,8 +12,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeCartController = exports.addCartController = void 0;
 const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
+const action_2 = require("../model/product/action");
+const action_3 = require("../model/cart/action");
 const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+    var _a;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
@@ -21,34 +23,55 @@ const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
-        const user = yield (0, action_1.getUserByEmail)(userEmail).select({
-            "cart.quantity": 1,
-            "cart.product": 1,
-        });
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        // Pastikan bahwa user benar ada
         if (!user)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 404,
                 message: "User not found",
             }, res);
-        const cartIndex = user.cart.findIndex((c) => { var _a; return ((_a = c.product) === null || _a === void 0 ? void 0 : _a._id.toString()) === productId; });
-        if (cartIndex >= 0) {
-            const quantity = (_c = (_b = user.cart.at(cartIndex)) === null || _b === void 0 ? void 0 : _b.quantity) !== null && _c !== void 0 ? _c : 1;
-            user.cart.set(cartIndex, {
-                quantity: quantity + 1,
-                product: productId,
+        const product = yield (0, action_2.getProductById)(productId);
+        //Pastikan productId valid dan ada
+        if (!product)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "Product not found",
+            }, res);
+        const userCart = yield (0, action_3.getCartByUserId)(user._id);
+        // Jika user cart masih kosong maka buat baru
+        if (!userCart) {
+            const createdCart = yield (0, action_3.createCartByUserId)({
+                user: user._id,
+                cart: [{ product: productId, quantity: 1 }],
             });
+            return (0, response_1.response)({
+                data: createdCart,
+                statusCode: 200,
+                message: "Success adding product to user cart",
+            }, res);
         }
-        else {
-            user.cart.push({ quantity: 1, product: productId });
+        // Cari produkId yang sama dengan cara menentukan index array-nya
+        const cartIndex = userCart.cart.findIndex((c) => c.product.toString() === productId);
+        // Jika index ditemukan (> -1), tambah nilai quantity nya saja
+        if (cartIndex > -1) {
+            userCart.cart[cartIndex].quantity += 1;
+            const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
+            return (0, response_1.response)({
+                data: updatedCart,
+                statusCode: 200,
+                message: "Success adding product to user cart",
+            }, res);
         }
-        const dbUser = yield (0, action_1.updateUserByEmail)(userEmail, user);
-        if (!dbUser)
-            throw new Error("Failed adding product to user cart");
+        // Jika produk tidak ditemukan pada wishlist, maka ...
+        // tambahkan produk secara langsung ke cart dan set quantity ke 1
+        userCart.cart.push({ product: productId, quantity: 1 });
+        const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
         return (0, response_1.response)({
-            data: dbUser,
+            data: updatedCart,
             statusCode: 200,
-            message: "Successfully adding product to user cart",
+            message: "Success adding product to user cart",
         }, res);
     }
     catch (error) {
@@ -57,49 +80,65 @@ const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
 });
 exports.addCartController = addCartController;
 const removeCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
-    const userEmail = (_d = req.session) === null || _d === void 0 ? void 0 : _d.email;
+    var _b;
+    const userEmail = (_b = req.session) === null || _b === void 0 ? void 0 : _b.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
     const { productId } = req.body;
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
-        const user = yield (0, action_1.getUserByEmail)(userEmail).select({
-            "cart.product": 1,
-            "cart.quantity": 1,
-        });
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        // Pastikan bahwa user benar ada
         if (!user)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 404,
                 message: "User not found",
             }, res);
-        const cartIndex = user.cart.findIndex((u) => u.product._id.toString() === productId);
-        const quantity = user.cart[cartIndex].quantity;
-        if (cartIndex >= 0 && quantity > 1) {
-            user.cart.set(cartIndex, {
-                quantity: quantity - 1,
-                product: productId,
-            });
-        }
-        else if (cartIndex >= 0 && quantity === 1) {
-            user.cart.splice(cartIndex, 1);
-        }
-        else {
+        const product = yield (0, action_2.getProductById)(productId);
+        // Pastikan bahwa product ID valid dan ada
+        if (!product)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 404,
-                message: "Product not found in user cart",
+                message: "Product not found",
+            }, res);
+        const userCart = yield (0, action_3.getCartByUserId)(user._id);
+        // Jika user cart kosong maka batalkan request user
+        if (!userCart) {
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "User cart is empty",
             }, res);
         }
-        const dbUser = yield (0, action_1.updateUserByEmail)(userEmail, user);
-        if (!dbUser)
-            throw new Error(`Failed remove product from user cart with email ${userEmail}`);
+        // Mencari index dari produk yang ingin dihapus
+        const cartIndex = userCart.cart.findIndex((u) => u.product.toString() === productId);
+        // Jika produk ditemukan pada index tertentu maka ...
+        if (cartIndex > -1) {
+            const quantity = userCart.cart[cartIndex].quantity;
+            // Jika quantity nya > 1 maka kurangi saja
+            if (quantity > 1) {
+                userCart.cart[cartIndex].quantity -= 1;
+            }
+            // Jika quantity nya 1 maka hapus produk dari cart
+            else if (quantity === 1) {
+                userCart.cart.splice(cartIndex, 1);
+            }
+            // Simpan hasil perubahan cart ke DB
+            const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
+            return (0, response_1.response)({
+                data: updatedCart,
+                statusCode: 200,
+                message: "Success decrease product quantity from cart",
+            }, res);
+        }
+        // Jika produk tidak ditemukan pada cart maka berikan response berikut
         return (0, response_1.response)({
-            data: dbUser,
-            statusCode: 200,
-            message: "Successfully remove product from user cart with email " + userEmail,
+            data: null,
+            statusCode: 404,
+            message: "Product is not in the cart",
         }, res);
     }
     catch (error) {

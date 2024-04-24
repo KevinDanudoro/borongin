@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.removeWishlistController = exports.addWishlistController = void 0;
 const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
+const action_2 = require("../model/product/action");
+const action_3 = require("../model/wishlist/action");
 const addWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
@@ -21,28 +23,50 @@ const addWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
-        const user = yield (0, action_1.getUserByEmail)(userEmail).select({ wishlist: 1 });
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        // Pastikan user ada pada DB
         if (!user)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 404,
                 message: "User not found",
             }, res);
-        const isInclude = user.wishlist.includes(productId);
+        const product = yield (0, action_2.getProductById)(productId);
+        //Pastikan productId valid dan ada
+        if (!product)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "Product not found",
+            }, res);
+        const userWishlist = yield (0, action_3.getWishlistByUserId)(user._id);
+        // Jika user wishlist masih kosong maka buat baru
+        if (!userWishlist) {
+            const createdWishlist = yield (0, action_3.createWishlistByUserId)({
+                user: user._id,
+                product: [productId],
+            });
+            return (0, response_1.response)({
+                data: createdWishlist,
+                statusCode: 200,
+                message: "Success adding product to user cart",
+            }, res);
+        }
+        const isInclude = userWishlist.product.includes(productId);
+        // Jika produk ditemukan pada wishlist maka jangan tambah produk ke wishlist
         if (isInclude)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 400,
                 message: "Product already in wishlist",
             }, res);
-        user.wishlist.push(productId);
-        const dbUser = yield (0, action_1.updateUserByEmail)(userEmail, user);
-        if (!dbUser)
-            throw new Error(`Failed add wishlists to user with email ${userEmail}`);
+        // Jika produk tidak terdapat pada wishlist maka tambahkan ke wishlist
+        userWishlist.product.push(productId);
+        const updatedWishlist = yield (0, action_3.updateWishlistByUserId)(user._id, userWishlist);
         return (0, response_1.response)({
-            data: dbUser,
+            data: updatedWishlist,
             statusCode: 200,
-            message: "Successfully add wishlists to user with email " + userEmail,
+            message: "Successfully add product to user wishlist",
         }, res);
     }
     catch (error) {
@@ -59,28 +83,49 @@ const removeWishlistController = (req, res, next) => __awaiter(void 0, void 0, v
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
-        const user = yield (0, action_1.getUserByEmail)(userEmail).select({ wishlist: 1 });
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        // Pastikan user ada pada DB
         if (!user)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 404,
                 message: "User not found",
             }, res);
-        const wishlistIndex = user.wishlist.findIndex((u) => u._id.toString() === productId);
-        if (wishlistIndex < 0)
+        const product = yield (0, action_2.getProductById)(productId);
+        //Pastikan productId valid dan ada
+        if (!product)
             return (0, response_1.response)({
                 data: null,
                 statusCode: 404,
-                message: "Product not found in wishlist",
+                message: "Product not found",
             }, res);
-        user.wishlist.splice(wishlistIndex, 1);
-        const dbUser = yield (0, action_1.updateUserByEmail)(userEmail, user);
-        if (!dbUser)
-            throw new Error(`Failed remove wishlists from user with email ${userEmail}`);
+        const userWishlist = yield (0, action_3.getWishlistByUserId)(user._id);
+        // Jika user wishlist kosong maka tolak request user
+        if (!userWishlist) {
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "User wishlist is empty",
+            }, res);
+        }
+        // Jika user wishlist ada maka cari index dari produk yang ingin dihapus
+        const wishlistIndex = userWishlist.product.findIndex((product) => product.toString() === productId);
+        // Jika index dari produk yang ingin dihapus ditemukan maka ...
+        if (wishlistIndex > -1) {
+            // Hapus produk dari array / list, lalu update DB
+            userWishlist.product.splice(wishlistIndex, 1);
+            const updatedWishlist = yield (0, action_3.updateWishlistByUserId)(user._id, userWishlist);
+            return (0, response_1.response)({
+                data: updatedWishlist,
+                statusCode: 200,
+                message: "Successfully remove product from user wishlist",
+            }, res);
+        }
+        // Jika index dari produk tidak ditemukan pada wishlist maka hentikan request user
         return (0, response_1.response)({
-            data: dbUser,
-            statusCode: 200,
-            message: "Successfully remove wishlists from user with email " + userEmail,
+            data: null,
+            statusCode: 404,
+            message: "Product not found in wishlist",
         }, res);
     }
     catch (error) {

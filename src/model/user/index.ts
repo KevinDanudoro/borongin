@@ -26,27 +26,6 @@ const userSchema = new mongoose.Schema(
         select: false,
       },
     },
-    wishlist: [
-      {
-        type: mongoose.Types.ObjectId,
-        ref: "Product",
-        select: false,
-      },
-    ],
-    cart: [
-      {
-        quantity: {
-          type: Number,
-          default: 0,
-          select: false,
-        },
-        product: {
-          type: mongoose.Types.ObjectId,
-          ref: "Product",
-          select: false,
-        },
-      },
-    ],
   },
   {
     timestamps: true,

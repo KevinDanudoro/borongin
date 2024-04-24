@@ -68,7 +68,15 @@ const signin = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         secure: false,
         domain: process.env.DOMAIN,
     });
-    return (0, response_1.response)({ data: existingUser, statusCode: 200, message: "Login access granted" }, res);
+    return (0, response_1.response)({
+        data: {
+            username: existingUser.username,
+            email: existingUser.email,
+            image: existingUser.image || null,
+        },
+        statusCode: 200,
+        message: "Login access granted",
+    }, res);
 });
 exports.signin = signin;
 //# sourceMappingURL=auth.controller.js.map

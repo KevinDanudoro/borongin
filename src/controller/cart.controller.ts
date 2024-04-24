@@ -1,6 +1,12 @@
 import express from "express";
 import { response } from "../helpers/response";
-import { getUserByEmail, updateUserByEmail } from "../model/user/action";
+import { getUserByEmail } from "../model/user/action";
+import { getProductById } from "../model/product/action";
+import {
+  createCartByUserId,
+  getCartByUserId,
+  updateCartByUserId,
+} from "../model/cart/action";
 
 export const addCartController = async (
   req: express.Request,
@@ -22,10 +28,8 @@ export const addCartController = async (
     );
 
   try {
-    const user = await getUserByEmail(userEmail).select({
-      "cart.quantity": 1,
-      "cart.product": 1,
-    });
+    const user = await getUserByEmail(userEmail);
+    // Pastikan bahwa user benar ada
     if (!user)
       return response(
         {
@@ -36,28 +40,64 @@ export const addCartController = async (
         res
       );
 
-    const cartIndex = user.cart.findIndex(
-      (c) => c.product?._id.toString() === productId
-    );
+    const product = await getProductById(productId);
+    //Pastikan productId valid dan ada
+    if (!product)
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "Product not found",
+        },
+        res
+      );
 
-    if (cartIndex >= 0) {
-      const quantity = user.cart.at(cartIndex)?.quantity ?? 1;
-      user.cart.set(cartIndex, {
-        quantity: quantity + 1,
-        product: productId,
+    const userCart = await getCartByUserId(user._id);
+
+    // Jika user cart masih kosong maka buat baru
+    if (!userCart) {
+      const createdCart = await createCartByUserId({
+        user: user._id,
+        cart: [{ product: productId, quantity: 1 }],
       });
-    } else {
-      user.cart.push({ quantity: 1, product: productId });
+      return response(
+        {
+          data: createdCart,
+          statusCode: 200,
+          message: "Success adding product to user cart",
+        },
+        res
+      );
     }
 
-    const dbUser = await updateUserByEmail(userEmail, user);
-    if (!dbUser) throw new Error("Failed adding product to user cart");
+    // Cari produkId yang sama dengan cara menentukan index array-nya
+    const cartIndex = userCart.cart.findIndex(
+      (c) => c.product.toString() === productId
+    );
 
+    // Jika index ditemukan (> -1), tambah nilai quantity nya saja
+    if (cartIndex > -1) {
+      userCart.cart[cartIndex].quantity += 1;
+      const updatedCart = await updateCartByUserId(user._id, userCart);
+      return response(
+        {
+          data: updatedCart,
+          statusCode: 200,
+          message: "Success adding product to user cart",
+        },
+        res
+      );
+    }
+
+    // Jika produk tidak ditemukan pada wishlist, maka ...
+    // tambahkan produk secara langsung ke cart dan set quantity ke 1
+    userCart.cart.push({ product: productId, quantity: 1 });
+    const updatedCart = await updateCartByUserId(user._id, userCart);
     return response(
       {
-        data: dbUser,
+        data: updatedCart,
         statusCode: 200,
-        message: "Successfully adding product to user cart",
+        message: "Success adding product to user cart",
       },
       res
     );
@@ -86,10 +126,8 @@ export const removeCartController = async (
     );
 
   try {
-    const user = await getUserByEmail(userEmail).select({
-      "cart.product": 1,
-      "cart.quantity": 1,
-    });
+    const user = await getUserByEmail(userEmail);
+    // Pastikan bahwa user benar ada
     if (!user)
       return response(
         {
@@ -100,41 +138,67 @@ export const removeCartController = async (
         res
       );
 
-    const cartIndex = user.cart.findIndex(
-      (u) => u.product._id.toString() === productId
-    );
-    const quantity = user.cart[cartIndex].quantity;
-
-    if (cartIndex >= 0 && quantity > 1) {
-      user.cart.set(cartIndex, {
-        quantity: quantity - 1,
-        product: productId,
-      });
-    } else if (cartIndex >= 0 && quantity === 1) {
-      user.cart.splice(cartIndex, 1);
-    } else {
+    const product = await getProductById(productId);
+    // Pastikan bahwa product ID valid dan ada
+    if (!product)
       return response(
         {
           data: null,
           statusCode: 404,
-          message: "Product not found in user cart",
+          message: "Product not found",
+        },
+        res
+      );
+
+    const userCart = await getCartByUserId(user._id);
+
+    // Jika user cart kosong maka batalkan request user
+    if (!userCart) {
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "User cart is empty",
         },
         res
       );
     }
 
-    const dbUser = await updateUserByEmail(userEmail, user);
-    if (!dbUser)
-      throw new Error(
-        `Failed remove product from user cart with email ${userEmail}`
-      );
+    // Mencari index dari produk yang ingin dihapus
+    const cartIndex = userCart.cart.findIndex(
+      (u) => u.product.toString() === productId
+    );
 
+    // Jika produk ditemukan pada index tertentu maka ...
+    if (cartIndex > -1) {
+      const quantity = userCart.cart[cartIndex].quantity;
+
+      // Jika quantity nya > 1 maka kurangi saja
+      if (quantity > 1) {
+        userCart.cart[cartIndex].quantity -= 1;
+      }
+      // Jika quantity nya 1 maka hapus produk dari cart
+      else if (quantity === 1) {
+        userCart.cart.splice(cartIndex, 1);
+      }
+      // Simpan hasil perubahan cart ke DB
+      const updatedCart = await updateCartByUserId(user._id, userCart);
+      return response(
+        {
+          data: updatedCart,
+          statusCode: 200,
+          message: "Success decrease product quantity from cart",
+        },
+        res
+      );
+    }
+
+    // Jika produk tidak ditemukan pada cart maka berikan response berikut
     return response(
       {
-        data: dbUser,
-        statusCode: 200,
-        message:
-          "Successfully remove product from user cart with email " + userEmail,
+        data: null,
+        statusCode: 404,
+        message: "Product is not in the cart",
       },
       res
     );
