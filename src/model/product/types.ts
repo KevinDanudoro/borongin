@@ -7,6 +7,7 @@ export interface Product extends mongoose.Document {
   imageUrl: string[];
   rating: number;
   sold: number;
+  category: string;
 }
 
 export type ProductModelType = mongoose.Model<Product>;

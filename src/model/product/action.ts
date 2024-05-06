@@ -10,6 +10,8 @@ export const createProduct = (newProduct: Record<string, any>) =>
 
 export const deleteProductById = (id: string) =>
   ProductModel.findByIdAndDelete(id);
+export const deleteProductByCategory = (category: string) =>
+  ProductModel.deleteMany({ category });
 
 export const updateProductById = (
   id: string,

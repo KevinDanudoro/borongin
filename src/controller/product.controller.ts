@@ -15,6 +15,7 @@ import {
 import { getWishlistByUserId } from "../model/wishlist/action";
 import { getUserByEmail } from "../model/user/action";
 import { getCartByUserId } from "../model/cart/action";
+import { getCategoryByName } from "../model/category/action";
 
 export const createProductController = async (
   req: express.Request,
@@ -29,6 +30,13 @@ export const createProductController = async (
     );
 
   try {
+    const isValidCategory = !!(await getCategoryByName(product.data.category));
+    if (!isValidCategory)
+      return response(
+        { data: null, statusCode: 404, message: "Product category not found" },
+        res
+      );
+
     const productImage = req.files as Array<any>;
     const uploadUrl = await uploadToCloudinary(productImage, {
       folder: "product",

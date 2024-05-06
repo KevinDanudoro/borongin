@@ -17,11 +17,15 @@ const cloudinary_1 = require("../helpers/cloudinary");
 const action_2 = require("../model/wishlist/action");
 const action_3 = require("../model/user/action");
 const action_4 = require("../model/cart/action");
+const action_5 = require("../model/category/action");
 const createProductController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const product = product_1.createProductSchema.safeParse(req.body);
     if (!product.success)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Bad product schema" }, res);
     try {
+        const isValidCategory = !!(yield (0, action_5.getCategoryByName)(product.data.category));
+        if (!isValidCategory)
+            return (0, response_1.response)({ data: null, statusCode: 404, message: "Product category not found" }, res);
         const productImage = req.files;
         const uploadUrl = yield (0, cloudinary_1.uploadToCloudinary)(productImage, {
             folder: "product",

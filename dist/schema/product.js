@@ -8,6 +8,7 @@ const zod_1 = __importDefault(require("zod"));
 exports.createProductSchema = zod_1.default.object({
     name: zod_1.default.string().min(1),
     desc: zod_1.default.string().min(1),
+    category: zod_1.default.string().min(1),
     price: zod_1.default.coerce.number().min(0),
 });
 exports.updateProductSchema = zod_1.default.object({

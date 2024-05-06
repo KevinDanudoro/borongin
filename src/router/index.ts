@@ -5,12 +5,14 @@ import wishlist from "./wishlist.router";
 import cart from "./cart.router";
 import transaction from "./transaction.router";
 import user from "./user.router";
+import category from "./category.router";
 
 const router = express.Router();
 
 export default (): express.Router => {
   auth(router);
   wishlist(router);
+  category(router);
   product(router);
   cart(router);
   transaction(router);
