@@ -9,14 +9,37 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeCartController = exports.addCartController = void 0;
+exports.removeCartController = exports.addCartController = exports.getCartController = void 0;
 const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
 const action_2 = require("../model/product/action");
 const action_3 = require("../model/cart/action");
-const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+const getCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
+    if (!userEmail)
+        return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
+    try {
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        // Pastikan user ada pada DB
+        if (!user)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "User not found",
+            }, res);
+        // Dapatkan cart dari DB
+        const wishlist = (_b = (yield (0, action_3.getCartByUserId)(user._id))) !== null && _b !== void 0 ? _b : [];
+        return (0, response_1.response)({ data: wishlist, message: "Success get user cart", statusCode: 200 }, res);
+    }
+    catch (err) {
+        next(err);
+    }
+});
+exports.getCartController = getCartController;
+const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _c;
+    const userEmail = (_c = req.session) === null || _c === void 0 ? void 0 : _c.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
     const { productId } = req.body;
@@ -80,8 +103,8 @@ const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
 });
 exports.addCartController = addCartController;
 const removeCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _b;
-    const userEmail = (_b = req.session) === null || _b === void 0 ? void 0 : _b.email;
+    var _d;
+    const userEmail = (_d = req.session) === null || _d === void 0 ? void 0 : _d.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
     const { productId } = req.body;

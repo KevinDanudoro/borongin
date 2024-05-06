@@ -12,6 +12,9 @@ import {
   deleteFromCloudinary,
   uploadToCloudinary,
 } from "../helpers/cloudinary";
+import { getWishlistByUserId } from "../model/wishlist/action";
+import { getUserByEmail } from "../model/user/action";
+import { getCartByUserId } from "../model/cart/action";
 
 export const createProductController = async (
   req: express.Request,
@@ -48,12 +51,54 @@ export const createProductController = async (
 };
 
 export const getProductsController = async (
-  _: express.Request,
+  req: express.Request,
   res: express.Response,
   next: express.NextFunction
 ) => {
+  const userEmail = req.session?.email;
+
   try {
     const dbProducts = await getProducts();
+
+    if (userEmail) {
+      const user = await getUserByEmail(userEmail);
+      if (!user)
+        return response(
+          {
+            data: dbProducts,
+            statusCode: 200,
+            message: "Successfully get all products",
+          },
+          res
+        );
+
+      const wishlist = await getWishlistByUserId(user._id);
+      const carts = await getCartByUserId(user._id);
+
+      const labeledProducts = dbProducts.map((product) => {
+        if (!wishlist || !carts) return product;
+
+        const cartProductIds = carts.cart.map((c) => c.product);
+
+        const labeledByWishlist = wishlist.product.includes(product._id)
+          ? { ...product.toObject(), isWishlist: true }
+          : { ...product.toObject(), isWishlist: false };
+        const labeledByCart = cartProductIds.includes(labeledByWishlist._id)
+          ? { ...labeledByWishlist, isCart: true }
+          : { ...labeledByWishlist, isCart: false };
+
+        return labeledByCart;
+      });
+
+      return response(
+        {
+          data: labeledProducts,
+          statusCode: 200,
+          message: "Successfully get all products",
+        },
+        res
+      );
+    }
 
     return response(
       {

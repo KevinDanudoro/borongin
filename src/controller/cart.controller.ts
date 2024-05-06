@@ -8,6 +8,42 @@ import {
   updateCartByUserId,
 } from "../model/cart/action";
 
+export const getCartController = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  const userEmail = req.session?.email;
+  if (!userEmail)
+    return response(
+      { data: null, statusCode: 404, message: "User session not found" },
+      res
+    );
+
+  try {
+    const user = await getUserByEmail(userEmail);
+    // Pastikan user ada pada DB
+    if (!user)
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "User not found",
+        },
+        res
+      );
+
+    // Dapatkan cart dari DB
+    const wishlist = (await getCartByUserId(user._id)) ?? [];
+    return response(
+      { data: wishlist, message: "Success get user cart", statusCode: 200 },
+      res
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const addCartController = async (
   req: express.Request,
   res: express.Response,

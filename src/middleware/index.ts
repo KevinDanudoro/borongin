@@ -5,7 +5,8 @@ import jwt from "jsonwebtoken";
 import { response } from "../helpers/response";
 import { jwtUserSchema } from "../schema/user";
 
-const publicApi = ["/auth/signup", "/auth/signin", "/", "/product"];
+const publicApi = ["/", "/product"];
+const authApi = ["/auth/signup", "/auth/signin"];
 
 export const authorization = (
   req: express.Request,
@@ -14,7 +15,9 @@ export const authorization = (
 ) => {
   const token = req.cookies["Authorization"];
   const isPublic = publicApi.includes(req.originalUrl);
-  if (isPublic) return next();
+  const isAuth = authApi.includes(req.originalUrl);
+
+  if (isAuth) return next();
 
   if (!token)
     return response(
@@ -29,6 +32,7 @@ export const authorization = (
     if (!parsedToken.success) {
       res.clearCookie("Authorization");
 
+      if (isPublic) return next();
       return response(
         {
           statusCode: 401,

@@ -8,6 +8,42 @@ import {
   updateWishlistByUserId,
 } from "../model/wishlist/action";
 
+export const getWishlistController = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  const userEmail = req.session?.email;
+  if (!userEmail)
+    return response(
+      { data: null, statusCode: 404, message: "User session not found" },
+      res
+    );
+
+  try {
+    const user = await getUserByEmail(userEmail);
+    // Pastikan user ada pada DB
+    if (!user)
+      return response(
+        {
+          data: null,
+          statusCode: 404,
+          message: "User not found",
+        },
+        res
+      );
+
+    // Dapatkan wishlist dari DB
+    const wishlist = (await getWishlistByUserId(user._id)) ?? [];
+    return response(
+      { data: wishlist, message: "Success get user wishlist", statusCode: 200 },
+      res
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const addWishlistController = async (
   req: express.Request,
   res: express.Response,

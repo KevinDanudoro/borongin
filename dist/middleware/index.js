@@ -8,11 +8,13 @@ const multer_1 = __importDefault(require("multer"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const response_1 = require("../helpers/response");
 const user_1 = require("../schema/user");
-const publicApi = ["/auth/signup", "/auth/signin", "/", "/product"];
+const publicApi = ["/", "/product"];
+const authApi = ["/auth/signup", "/auth/signin"];
 const authorization = (req, res, next) => {
     const token = req.cookies["Authorization"];
     const isPublic = publicApi.includes(req.originalUrl);
-    if (isPublic)
+    const isAuth = authApi.includes(req.originalUrl);
+    if (isAuth)
         return next();
     if (!token)
         return (0, response_1.response)({ data: null, statusCode: 401, message: "Unauthorized user" }, res);
@@ -21,6 +23,8 @@ const authorization = (req, res, next) => {
         const parsedToken = user_1.jwtUserSchema.safeParse(decodeToken);
         if (!parsedToken.success) {
             res.clearCookie("Authorization");
+            if (isPublic)
+                return next();
             return (0, response_1.response)({
                 statusCode: 401,
                 message: "Authentication token schema is invalid",
