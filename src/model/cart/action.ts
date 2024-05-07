@@ -7,3 +7,10 @@ export const updateCartByUserId = (userId: string, cart: ICart) =>
   CartModel.findOneAndUpdate({ user: userId }, cart);
 export const deleteCartByUserId = (userId: string) =>
   CartModel.findOneAndDelete({ user: userId });
+
+export const removeProductFromCart = (productId: string) =>
+  CartModel.updateMany(
+    {},
+    { $pull: { cart: { product: productId } } },
+    { new: true }
+  );

@@ -15,7 +15,7 @@ const action_1 = require("../model/user/action");
 const action_2 = require("../model/product/action");
 const action_3 = require("../model/wishlist/action");
 const getWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
+    var _a, _b, _c;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
@@ -29,7 +29,7 @@ const getWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
                 message: "User not found",
             }, res);
         // Dapatkan wishlist dari DB
-        const wishlist = (_b = (yield (0, action_3.getWishlistByUserId)(user._id))) !== null && _b !== void 0 ? _b : [];
+        const wishlist = (_c = (_b = (yield (0, action_3.getWishlistByUserId)(user._id))) === null || _b === void 0 ? void 0 : _b.product) !== null && _c !== void 0 ? _c : [];
         return (0, response_1.response)({ data: wishlist, message: "Success get user wishlist", statusCode: 200 }, res);
     }
     catch (err) {
@@ -38,8 +38,8 @@ const getWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
 });
 exports.getWishlistController = getWishlistController;
 const addWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _c;
-    const userEmail = (_c = req.session) === null || _c === void 0 ? void 0 : _c.email;
+    var _d;
+    const userEmail = (_d = req.session) === null || _d === void 0 ? void 0 : _d.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
     const { productId } = req.body;
@@ -98,8 +98,8 @@ const addWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
 });
 exports.addWishlistController = addWishlistController;
 const removeWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
-    const userEmail = (_d = req.session) === null || _d === void 0 ? void 0 : _d.email;
+    var _e;
+    const userEmail = (_e = req.session) === null || _e === void 0 ? void 0 : _e.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
     const { productId } = req.body;

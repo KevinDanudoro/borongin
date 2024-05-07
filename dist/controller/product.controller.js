@@ -143,12 +143,17 @@ const deleteProductByIdController = (req, res, next) => __awaiter(void 0, void 0
     if (!id)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
+        // Hapus produk
         const dbProduct = yield (0, action_1.deleteProductById)(id);
+        // Hapus wishlist dan cart terkait
+        const dbWishlist = yield (0, action_2.removeProductFromWishlist)(id);
+        const dbCart = yield (0, action_4.removeProductFromCart)(id);
+        // Hapus assets dari cloudinary
         const isDelSuccess = yield (0, cloudinary_1.deleteFromCloudinary)((_c = dbProduct === null || dbProduct === void 0 ? void 0 : dbProduct.imageUrl) !== null && _c !== void 0 ? _c : []);
         if (!isDelSuccess)
-            throw new Error("Failed delete resource from cloud");
+            throw new Error("Failed to delete resource from cloud");
         return (0, response_1.response)({
-            data: dbProduct,
+            data: { product: dbProduct, wishlist: dbWishlist, cart: dbCart },
             statusCode: 200,
             message: "Successfully delete product with id " + id,
         }, res);

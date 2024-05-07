@@ -34,7 +34,7 @@ export const getCartController = async (
       );
 
     // Dapatkan cart dari DB
-    const wishlist = (await getCartByUserId(user._id)) ?? [];
+    const wishlist = (await getCartByUserId(user._id))?.cart ?? [];
     return response(
       { data: wishlist, message: "Success get user cart", statusCode: 200 },
       res

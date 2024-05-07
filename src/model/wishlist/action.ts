@@ -9,3 +9,11 @@ export const updateWishlistByUserId = (userId: string, wishlist: IWishlist) =>
   WishlistModel.findOneAndUpdate({ user: userId }, wishlist);
 export const deleteWishlistByUserId = (userId: string) =>
   WishlistModel.findOneAndDelete({ user: userId });
+
+// New true untuk mengembalikan dokumen pasca update
+export const removeProductFromWishlist = (productId: string) =>
+  WishlistModel.updateMany(
+    {},
+    { $pull: { product: productId } },
+    { new: true }
+  );

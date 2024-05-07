@@ -18,6 +18,7 @@ export const authorization = (
   const isAuth = authApi.includes(req.originalUrl);
 
   if (isAuth) return next();
+  if (!token && isPublic) return next();
 
   if (!token)
     return response(

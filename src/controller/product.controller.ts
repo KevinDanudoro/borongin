@@ -12,9 +12,12 @@ import {
   deleteFromCloudinary,
   uploadToCloudinary,
 } from "../helpers/cloudinary";
-import { getWishlistByUserId } from "../model/wishlist/action";
+import {
+  getWishlistByUserId,
+  removeProductFromWishlist,
+} from "../model/wishlist/action";
 import { getUserByEmail } from "../model/user/action";
-import { getCartByUserId } from "../model/cart/action";
+import { getCartByUserId, removeProductFromCart } from "../model/cart/action";
 import { getCategoryByName } from "../model/category/action";
 
 export const createProductController = async (
@@ -224,13 +227,20 @@ export const deleteProductByIdController = async (
     );
 
   try {
+    // Hapus produk
     const dbProduct = await deleteProductById(id);
+
+    // Hapus wishlist dan cart terkait
+    const dbWishlist = await removeProductFromWishlist(id);
+    const dbCart = await removeProductFromCart(id);
+
+    // Hapus assets dari cloudinary
     const isDelSuccess = await deleteFromCloudinary(dbProduct?.imageUrl ?? []);
-    if (!isDelSuccess) throw new Error("Failed delete resource from cloud");
+    if (!isDelSuccess) throw new Error("Failed to delete resource from cloud");
 
     return response(
       {
-        data: dbProduct,
+        data: { product: dbProduct, wishlist: dbWishlist, cart: dbCart },
         statusCode: 200,
         message: "Successfully delete product with id " + id,
       },

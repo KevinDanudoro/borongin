@@ -16,6 +16,8 @@ const authorization = (req, res, next) => {
     const isAuth = authApi.includes(req.originalUrl);
     if (isAuth)
         return next();
+    if (!token && isPublic)
+        return next();
     if (!token)
         return (0, response_1.response)({ data: null, statusCode: 401, message: "Unauthorized user" }, res);
     try {

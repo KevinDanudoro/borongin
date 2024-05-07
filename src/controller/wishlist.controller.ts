@@ -34,7 +34,7 @@ export const getWishlistController = async (
       );
 
     // Dapatkan wishlist dari DB
-    const wishlist = (await getWishlistByUserId(user._id)) ?? [];
+    const wishlist = (await getWishlistByUserId(user._id))?.product ?? [];
     return response(
       { data: wishlist, message: "Success get user wishlist", statusCode: 200 },
       res
