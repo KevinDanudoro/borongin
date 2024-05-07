@@ -8,5 +8,5 @@ import {
 export default (router: express.Router) => {
   router.get("/wishlist", getWishlistController);
   router.post("/wishlist", addWishlistController);
-  router.delete("/wishlist", removeWishlistController);
+  router.delete("/wishlist/:id", removeWishlistController);
 };

@@ -102,7 +102,7 @@ const removeWishlistController = (req, res, next) => __awaiter(void 0, void 0, v
     const userEmail = (_e = req.session) === null || _e === void 0 ? void 0 : _e.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
-    const { productId } = req.body;
+    const { id: productId } = req.params;
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {

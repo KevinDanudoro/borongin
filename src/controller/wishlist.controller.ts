@@ -151,7 +151,7 @@ export const removeWishlistController = async (
       res
     );
 
-  const { productId } = req.body;
+  const { id: productId } = req.params;
   if (!productId)
     return response(
       { data: null, statusCode: 400, message: "Product ID is mandatory" },
