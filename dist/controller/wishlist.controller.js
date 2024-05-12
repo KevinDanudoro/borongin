@@ -14,8 +14,9 @@ const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
 const action_2 = require("../model/product/action");
 const action_3 = require("../model/wishlist/action");
+const action_4 = require("../model/cart/action");
 const getWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c;
+    var _a;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
@@ -29,8 +30,23 @@ const getWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
                 message: "User not found",
             }, res);
         // Dapatkan wishlist dari DB
-        const wishlist = (_c = (_b = (yield (0, action_3.getWishlistByUserId)(user._id))) === null || _b === void 0 ? void 0 : _b.product) !== null && _c !== void 0 ? _c : [];
-        return (0, response_1.response)({ data: wishlist, message: "Success get user wishlist", statusCode: 200 }, res);
+        const wishlist = yield (0, action_3.getWishlistByUserId)(user._id).populate("product");
+        const carts = yield (0, action_4.getCartByUserId)(user._id);
+        const labeledProducts = wishlist
+            ? wishlist.product.map((product) => {
+                if (!wishlist || !carts)
+                    return product;
+                const cartProductIds = carts.cart.map((c) => c.product.toString());
+                const labeledByCart = cartProductIds.includes(product._id.toString())
+                    ? Object.assign(Object.assign({}, product.toObject()), { isCart: true, isWishlist: true }) : Object.assign(Object.assign({}, product.toObject()), { isCart: false, isWishlist: true });
+                return labeledByCart;
+            })
+            : [];
+        return (0, response_1.response)({
+            data: labeledProducts !== null && labeledProducts !== void 0 ? labeledProducts : wishlist,
+            statusCode: 200,
+            message: "Successfully get all products",
+        }, res);
     }
     catch (err) {
         next(err);
@@ -38,11 +54,11 @@ const getWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
 });
 exports.getWishlistController = getWishlistController;
 const addWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _d;
-    const userEmail = (_d = req.session) === null || _d === void 0 ? void 0 : _d.email;
+    var _b;
+    const userEmail = (_b = req.session) === null || _b === void 0 ? void 0 : _b.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
-    const { productId } = req.body;
+    const { id: productId } = req.params;
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
@@ -98,8 +114,8 @@ const addWishlistController = (req, res, next) => __awaiter(void 0, void 0, void
 });
 exports.addWishlistController = addWishlistController;
 const removeWishlistController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _e;
-    const userEmail = (_e = req.session) === null || _e === void 0 ? void 0 : _e.email;
+    var _c;
+    const userEmail = (_c = req.session) === null || _c === void 0 ? void 0 : _c.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 404, message: "User session not found" }, res);
     const { id: productId } = req.params;

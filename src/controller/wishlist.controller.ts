@@ -7,6 +7,8 @@ import {
   getWishlistByUserId,
   updateWishlistByUserId,
 } from "../model/wishlist/action";
+import { getCartByUserId } from "../model/cart/action";
+import { PopulatedWishlist } from "../model/wishlist/types";
 
 export const getWishlistController = async (
   req: express.Request,
@@ -34,9 +36,30 @@ export const getWishlistController = async (
       );
 
     // Dapatkan wishlist dari DB
-    const wishlist = (await getWishlistByUserId(user._id))?.product ?? [];
+    const wishlist = await getWishlistByUserId(
+      user._id
+    ).populate<PopulatedWishlist>("product");
+    const carts = await getCartByUserId(user._id);
+
+    const labeledProducts = wishlist
+      ? wishlist.product.map((product) => {
+          if (!wishlist || !carts) return product as Record<string, any>;
+
+          const cartProductIds = carts.cart.map((c) => c.product.toString());
+          const labeledByCart = cartProductIds.includes(product._id.toString())
+            ? { ...product.toObject(), isCart: true, isWishlist: true }
+            : { ...product.toObject(), isCart: false, isWishlist: true };
+
+          return labeledByCart as Record<string, any>;
+        })
+      : [];
+
     return response(
-      { data: wishlist, message: "Success get user wishlist", statusCode: 200 },
+      {
+        data: labeledProducts ?? wishlist,
+        statusCode: 200,
+        message: "Successfully get all products",
+      },
       res
     );
   } catch (err) {
@@ -56,7 +79,7 @@ export const addWishlistController = async (
       res
     );
 
-  const { productId } = req.body;
+  const { id: productId } = req.params;
   if (!productId)
     return response(
       { data: null, statusCode: 400, message: "Product ID is mandatory" },

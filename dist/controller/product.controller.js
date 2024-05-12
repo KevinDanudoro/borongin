@@ -19,6 +19,9 @@ const action_3 = require("../model/user/action");
 const action_4 = require("../model/cart/action");
 const action_5 = require("../model/category/action");
 const createProductController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const session = req.session;
+    if (!session)
+        return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
     const product = product_1.createProductSchema.safeParse(req.body);
     if (!product.success)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Bad product schema" }, res);
@@ -60,10 +63,10 @@ const getProductsController = (req, res, next) => __awaiter(void 0, void 0, void
             const labeledProducts = dbProducts.map((product) => {
                 if (!wishlist || !carts)
                     return product;
-                const cartProductIds = carts.cart.map((c) => c.product);
+                const cartProductIds = carts.cart.map((c) => c.product.toString());
                 const labeledByWishlist = wishlist.product.includes(product._id)
                     ? Object.assign(Object.assign({}, product.toObject()), { isWishlist: true }) : Object.assign(Object.assign({}, product.toObject()), { isWishlist: false });
-                const labeledByCart = cartProductIds.includes(labeledByWishlist._id)
+                const labeledByCart = cartProductIds.includes(labeledByWishlist._id.toString())
                     ? Object.assign(Object.assign({}, labeledByWishlist), { isCart: true }) : Object.assign(Object.assign({}, labeledByWishlist), { isCart: false });
                 return labeledByCart;
             });

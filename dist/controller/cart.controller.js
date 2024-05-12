@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeCartController = exports.addCartController = exports.getCartController = void 0;
+exports.setCartQuantityController = exports.removeCartController = exports.addCartController = exports.getCartController = void 0;
 const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
 const action_2 = require("../model/product/action");
@@ -29,8 +29,8 @@ const getCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
                 message: "User not found",
             }, res);
         // Dapatkan cart dari DB
-        const wishlist = (_c = (_b = (yield (0, action_3.getCartByUserId)(user._id))) === null || _b === void 0 ? void 0 : _b.cart) !== null && _c !== void 0 ? _c : [];
-        return (0, response_1.response)({ data: wishlist, message: "Success get user cart", statusCode: 200 }, res);
+        const cart = (_c = (_b = (yield (0, action_3.getCartByUserId)(user._id).populate("cart.product"))) === null || _b === void 0 ? void 0 : _b.cart) !== null && _c !== void 0 ? _c : [];
+        return (0, response_1.response)({ data: cart, message: "Success get user cart", statusCode: 200 }, res);
     }
     catch (err) {
         next(err);
@@ -42,7 +42,7 @@ const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
     const userEmail = (_d = req.session) === null || _d === void 0 ? void 0 : _d.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
-    const { productId } = req.body;
+    const { id: productId } = req.params;
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
@@ -77,17 +77,14 @@ const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         }
         // Cari produkId yang sama dengan cara menentukan index array-nya
         const cartIndex = userCart.cart.findIndex((c) => c.product.toString() === productId);
-        // Jika index ditemukan (> -1), tambah nilai quantity nya saja
-        if (cartIndex > -1) {
-            userCart.cart[cartIndex].quantity += 1;
-            const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
+        // Jika index ditemukan (> -1), kembalikan bahwa produk sudah terdapat pada cart
+        if (cartIndex > -1)
             return (0, response_1.response)({
-                data: updatedCart,
-                statusCode: 200,
-                message: "Success adding product to user cart",
+                data: userCart,
+                statusCode: 400,
+                message: "Product already in cart",
             }, res);
-        }
-        // Jika produk tidak ditemukan pada wishlist, maka ...
+        // Jika produk tidak ditemukan pada cart, maka ...
         // tambahkan produk secara langsung ke cart dan set quantity ke 1
         userCart.cart.push({ product: productId, quantity: 1 });
         const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
@@ -107,7 +104,7 @@ const removeCartController = (req, res, next) => __awaiter(void 0, void 0, void 
     const userEmail = (_e = req.session) === null || _e === void 0 ? void 0 : _e.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
-    const { productId } = req.body;
+    const { id: productId } = req.params;
     if (!productId)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is mandatory" }, res);
     try {
@@ -138,30 +135,21 @@ const removeCartController = (req, res, next) => __awaiter(void 0, void 0, void 
         }
         // Mencari index dari produk yang ingin dihapus
         const cartIndex = userCart.cart.findIndex((u) => u.product.toString() === productId);
-        // Jika produk ditemukan pada index tertentu maka ...
-        if (cartIndex > -1) {
-            const quantity = userCart.cart[cartIndex].quantity;
-            // Jika quantity nya > 1 maka kurangi saja
-            if (quantity > 1) {
-                userCart.cart[cartIndex].quantity -= 1;
-            }
-            // Jika quantity nya 1 maka hapus produk dari cart
-            else if (quantity === 1) {
-                userCart.cart.splice(cartIndex, 1);
-            }
-            // Simpan hasil perubahan cart ke DB
-            const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
-            return (0, response_1.response)({
-                data: updatedCart,
-                statusCode: 200,
-                message: "Success decrease product quantity from cart",
-            }, res);
-        }
         // Jika produk tidak ditemukan pada cart maka berikan response berikut
+        if (cartIndex < 0)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "Product is not in the cart",
+            }, res);
+        // Jika produk ditemukan pada index tertentu maka hapus produk pada cart
+        userCart.cart.splice(cartIndex, 1);
+        // Simpan hasil perubahan cart ke DB
+        const updatedCart = yield (0, action_3.updateCartByUserId)(user._id, userCart);
         return (0, response_1.response)({
-            data: null,
-            statusCode: 404,
-            message: "Product is not in the cart",
+            data: updatedCart,
+            statusCode: 200,
+            message: "Success decrease product quantity from cart",
         }, res);
     }
     catch (error) {
@@ -169,4 +157,54 @@ const removeCartController = (req, res, next) => __awaiter(void 0, void 0, void 
     }
 });
 exports.removeCartController = removeCartController;
+const setCartQuantityController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _f;
+    const userEmail = (_f = req.session) === null || _f === void 0 ? void 0 : _f.email;
+    const { id: productId } = req.params;
+    const { quantity } = req.body;
+    if (!userEmail)
+        return (0, response_1.response)({ data: null, statusCode: 403, message: "User session not found" }, res);
+    if (!quantity || quantity < 0)
+        return (0, response_1.response)({ data: null, statusCode: 400, message: "Quantity must greater than 0" }, res);
+    if (!productId)
+        return (0, response_1.response)({ data: null, statusCode: 400, message: "Product id is mandatory" }, res);
+    try {
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        // Pastikan bahwa user benar ada
+        if (!user)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "User not found",
+            }, res);
+        const product = yield (0, action_2.getProductById)(productId);
+        // Pastikan bahwa product ID valid dan ada
+        if (!product)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "Product not found",
+            }, res);
+        const userCart = yield (0, action_3.getCartByUserId)(user._id);
+        // Jika user cart kosong maka batalkan request user
+        if (!userCart) {
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 404,
+                message: "User cart is empty",
+            }, res);
+        }
+        const productCartIndex = userCart.cart.findIndex((cart) => cart.product.includes(productId));
+        if (productCartIndex < 0)
+            return (0, response_1.response)({ data: null, statusCode: 404, message: "Product not found in cart" }, res);
+        userCart.cart[productCartIndex] = {
+            quantity,
+            product: userCart.cart[productCartIndex].product,
+        };
+    }
+    catch (err) {
+        next(err);
+    }
+});
+exports.setCartQuantityController = setCartQuantityController;
 //# sourceMappingURL=cart.controller.js.map

@@ -25,6 +25,13 @@ export const createProductController = async (
   res: express.Response,
   next: express.NextFunction
 ) => {
+  const session = req.session;
+  if (!session)
+    return response(
+      { data: null, statusCode: 403, message: "User session not found" },
+      res
+    );
+
   const product = createProductSchema.safeParse(req.body);
   if (!product.success)
     return response(
@@ -89,12 +96,14 @@ export const getProductsController = async (
       const labeledProducts = dbProducts.map((product) => {
         if (!wishlist || !carts) return product;
 
-        const cartProductIds = carts.cart.map((c) => c.product);
+        const cartProductIds = carts.cart.map((c) => c.product.toString());
 
         const labeledByWishlist = wishlist.product.includes(product._id)
           ? { ...product.toObject(), isWishlist: true }
           : { ...product.toObject(), isWishlist: false };
-        const labeledByCart = cartProductIds.includes(labeledByWishlist._id)
+        const labeledByCart = cartProductIds.includes(
+          labeledByWishlist._id.toString()
+        )
           ? { ...labeledByWishlist, isCart: true }
           : { ...labeledByWishlist, isCart: false };
 
