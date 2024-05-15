@@ -9,21 +9,36 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createTransactionController = void 0;
+exports.createProductTransactionController = void 0;
 const uuid_1 = require("uuid");
 const midtrans_1 = require("../helpers/midtrans");
 const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
-const createTransactionController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const action_2 = require("../model/product/action");
+const createProductTransactionController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
     if (!userEmail)
         return (0, response_1.response)({ data: null, statusCode: 400, message: "User session not found" }, res);
+    const { id } = req.params;
+    if (!id)
+        return (0, response_1.response)({ data: null, statusCode: 400, message: "Product ID is missing" }, res);
+    const query = req.query;
+    const quantity = parseInt(query.quantity, 10);
+    if (quantity === 0 || !quantity)
+        return (0, response_1.response)({ data: null, statusCode: 400, message: "Quantity is missing" }, res);
     try {
-        const user = yield (0, action_1.getUserByEmail)(userEmail)
-            .select("+cart.product +cart.quantity")
-            .populate("cart.product");
-        const price = user === null || user === void 0 ? void 0 : user.cart.map((c) => c.quantity * c.product.price).reduce((a, b) => a + b);
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        if (!user)
+            return (0, response_1.response)({ data: null, statusCode: 404, message: "User not found" }, res);
+        const product = yield (0, action_2.getProductById)(id);
+        if (!product)
+            return (0, response_1.response)({
+                data: null,
+                statusCode: 400,
+                message: `Product with id ${id} is not found`,
+            }, res);
+        const price = product.price * quantity;
         const transactionParameter = {
             transaction_details: {
                 order_id: (0, uuid_1.v4)(),
@@ -50,5 +65,5 @@ const createTransactionController = (req, res, next) => __awaiter(void 0, void 0
         next(error);
     }
 });
-exports.createTransactionController = createTransactionController;
+exports.createProductTransactionController = createProductTransactionController;
 //# sourceMappingURL=transaction.controller.js.map

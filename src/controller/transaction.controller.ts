@@ -3,9 +3,9 @@ import { v4 as uuidv4 } from "uuid";
 import { midtrans } from "../helpers/midtrans";
 import { response } from "../helpers/response";
 import { getUserByEmail } from "../model/user/action";
-import { PopulatedUserCart } from "../model/user/types";
+import { getProductById } from "../model/product/action";
 
-export const createTransactionController = async (
+export const createProductTransactionController = async (
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
@@ -17,14 +17,42 @@ export const createTransactionController = async (
       res
     );
 
-  try {
-    const user = await getUserByEmail(userEmail)
-      .select("+cart.product +cart.quantity")
-      .populate<PopulatedUserCart>("cart.product");
+  const { id } = req.params;
+  if (!id)
+    return response(
+      { data: null, statusCode: 400, message: "Product ID is missing" },
+      res
+    );
 
-    const price = user?.cart
-      .map((c) => c.quantity * c.product.price)
-      .reduce((a, b) => a + b);
+  const query = req.query;
+  const quantity = parseInt(query.quantity as string, 10);
+
+  if (quantity === 0 || !quantity)
+    return response(
+      { data: null, statusCode: 400, message: "Quantity is missing" },
+      res
+    );
+
+  try {
+    const user = await getUserByEmail(userEmail);
+    if (!user)
+      return response(
+        { data: null, statusCode: 404, message: "User not found" },
+        res
+      );
+
+    const product = await getProductById(id);
+    if (!product)
+      return response(
+        {
+          data: null,
+          statusCode: 400,
+          message: `Product with id ${id} is not found`,
+        },
+        res
+      );
+
+    const price = product.price * quantity;
 
     const transactionParameter = {
       transaction_details: {

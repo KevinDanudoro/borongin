@@ -6,7 +6,7 @@ import { response } from "../helpers/response";
 import { jwtUserSchema } from "../schema/user";
 
 const publicApi = ["/", "/product"];
-const authApi = ["/auth/signup", "/auth/signin"];
+const authApi = ["/auth"];
 
 export const authorization = (
   req: express.Request,
@@ -14,8 +14,10 @@ export const authorization = (
   next: express.NextFunction
 ) => {
   const token = req.cookies["Authorization"];
-  const isPublic = publicApi.includes(req.originalUrl);
-  const isAuth = authApi.includes(req.originalUrl);
+  const apiUrl = "/" + req.originalUrl.split("/")[1];
+
+  const isPublic = publicApi.includes(apiUrl);
+  const isAuth = authApi.includes(apiUrl);
 
   if (isAuth) return next();
   if (!token && isPublic) return next();

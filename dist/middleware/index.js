@@ -9,11 +9,12 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const response_1 = require("../helpers/response");
 const user_1 = require("../schema/user");
 const publicApi = ["/", "/product"];
-const authApi = ["/auth/signup", "/auth/signin"];
+const authApi = ["/auth"];
 const authorization = (req, res, next) => {
     const token = req.cookies["Authorization"];
-    const isPublic = publicApi.includes(req.originalUrl);
-    const isAuth = authApi.includes(req.originalUrl);
+    const apiUrl = "/" + req.originalUrl.split("/")[1];
+    const isPublic = publicApi.includes(apiUrl);
+    const isAuth = authApi.includes(apiUrl);
     if (isAuth)
         return next();
     if (!token && isPublic)

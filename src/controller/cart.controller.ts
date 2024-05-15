@@ -7,6 +7,7 @@ import {
   getCartByUserId,
   updateCartByUserId,
 } from "../model/cart/action";
+import { PopulatedCart } from "model/cart/types";
 
 export const getCartController = async (
   req: express.Request,
@@ -116,7 +117,7 @@ export const addCartController = async (
     if (cartIndex > -1)
       return response(
         {
-          data: userCart,
+          data: null,
           statusCode: 400,
           message: "Product already in cart",
         },
@@ -284,7 +285,9 @@ export const setCartQuantityController = async (
         res
       );
 
-    const userCart = await getCartByUserId(user._id);
+    const userCart = await getCartByUserId(user._id).populate<PopulatedCart>(
+      "cart.product"
+    );
     // Jika user cart kosong maka batalkan request user
     if (!userCart) {
       return response(
@@ -297,8 +300,8 @@ export const setCartQuantityController = async (
       );
     }
 
-    const productCartIndex = userCart.cart.findIndex((cart) =>
-      cart.product.includes(productId)
+    const productCartIndex = userCart.cart.findIndex(
+      (cart) => cart.product._id.toString() === productId
     );
     if (productCartIndex < 0)
       return response(
@@ -310,6 +313,17 @@ export const setCartQuantityController = async (
       quantity,
       product: userCart.cart[productCartIndex].product,
     };
+
+    await updateCartByUserId(user._id, userCart.toObject());
+
+    return response(
+      {
+        data: userCart.cart,
+        statusCode: 200,
+        message: "Success set product cart quantity",
+      },
+      res
+    );
   } catch (err) {
     next(err);
   }

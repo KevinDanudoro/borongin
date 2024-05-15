@@ -80,7 +80,7 @@ const addCartController = (req, res, next) => __awaiter(void 0, void 0, void 0, 
         // Jika index ditemukan (> -1), kembalikan bahwa produk sudah terdapat pada cart
         if (cartIndex > -1)
             return (0, response_1.response)({
-                data: userCart,
+                data: null,
                 statusCode: 400,
                 message: "Product already in cart",
             }, res);
@@ -185,7 +185,7 @@ const setCartQuantityController = (req, res, next) => __awaiter(void 0, void 0, 
                 statusCode: 404,
                 message: "Product not found",
             }, res);
-        const userCart = yield (0, action_3.getCartByUserId)(user._id);
+        const userCart = yield (0, action_3.getCartByUserId)(user._id).populate("cart.product");
         // Jika user cart kosong maka batalkan request user
         if (!userCart) {
             return (0, response_1.response)({
@@ -194,13 +194,19 @@ const setCartQuantityController = (req, res, next) => __awaiter(void 0, void 0, 
                 message: "User cart is empty",
             }, res);
         }
-        const productCartIndex = userCart.cart.findIndex((cart) => cart.product.includes(productId));
+        const productCartIndex = userCart.cart.findIndex((cart) => cart.product._id.toString() === productId);
         if (productCartIndex < 0)
             return (0, response_1.response)({ data: null, statusCode: 404, message: "Product not found in cart" }, res);
         userCart.cart[productCartIndex] = {
             quantity,
             product: userCart.cart[productCartIndex].product,
         };
+        yield (0, action_3.updateCartByUserId)(user._id, userCart.toObject());
+        return (0, response_1.response)({
+            data: userCart.cart,
+            statusCode: 200,
+            message: "Success set product cart quantity",
+        }, res);
     }
     catch (err) {
         next(err);
