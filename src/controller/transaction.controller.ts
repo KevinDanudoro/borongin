@@ -66,6 +66,13 @@ export const createProductTransactionController = async (
         first_name: user?.username,
         email: user?.email,
       },
+      item_details: {
+        id: id,
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        category: product.category,
+      },
     };
     const snapToken = await midtrans.createTransactionToken(
       transactionParameter

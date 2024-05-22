@@ -51,6 +51,13 @@ const createProductTransactionController = (req, res, next) => __awaiter(void 0,
                 first_name: user === null || user === void 0 ? void 0 : user.username,
                 email: user === null || user === void 0 ? void 0 : user.email,
             },
+            item_details: {
+                id: id,
+                name: product.name,
+                price: product.price,
+                quantity: quantity,
+                category: product.category,
+            },
         };
         const snapToken = yield midtrans_1.midtrans.createTransactionToken(transactionParameter);
         return (0, response_1.response)({
