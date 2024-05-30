@@ -4,6 +4,8 @@ import { midtrans } from "../helpers/midtrans";
 import { response } from "../helpers/response";
 import { getUserByEmail } from "../model/user/action";
 import { getProductById } from "../model/product/action";
+import { getCartByUserId, updateCartByUserId } from "../model/cart/action";
+import { PopulatedCart } from "../model/cart/types";
 
 export const createProductTransactionController = async (
   req: express.Request,
@@ -73,6 +75,78 @@ export const createProductTransactionController = async (
         quantity: quantity,
         category: product.category,
       },
+    };
+    const snapToken = await midtrans.createTransactionToken(
+      transactionParameter
+    );
+
+    return response(
+      {
+        data: { transactionToken: snapToken },
+        statusCode: 200,
+        message: "Successfully create transaction",
+      },
+      res
+    );
+  } catch (error) {
+    if (error instanceof Error) return next(error.message);
+    next(error);
+  }
+};
+
+export const createCartTransactionController = async (
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  const userEmail = req.session?.email;
+  if (!userEmail)
+    return response(
+      { data: null, statusCode: 400, message: "User session not found" },
+      res
+    );
+
+  try {
+    const user = await getUserByEmail(userEmail);
+    if (!user)
+      return response(
+        { data: null, statusCode: 404, message: "User not found" },
+        res
+      );
+
+    const userCart = await getCartByUserId(user._id).populate<PopulatedCart>(
+      "cart.product"
+    );
+
+    if (!userCart) {
+      return response(
+        { data: null, statusCode: 400, message: "User cart is empty" },
+        res
+      );
+    }
+    const price = userCart.cart
+      .map((data) => data.product.price * data.quantity)
+      .reduce((a, b) => a + b);
+
+    const itemDetails = userCart.cart.map((data) => ({
+      name: data.product.name,
+      price: data.product.price,
+      quantity: data.quantity,
+    }));
+
+    const transactionParameter = {
+      transaction_details: {
+        order_id: uuidv4(),
+        gross_amount: price,
+      },
+      credit_card: {
+        secure: true,
+      },
+      customer_details: {
+        first_name: user.username,
+        email: user.email,
+      },
+      item_details: itemDetails,
     };
     const snapToken = await midtrans.createTransactionToken(
       transactionParameter

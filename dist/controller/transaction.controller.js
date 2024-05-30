@@ -9,12 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createProductTransactionController = void 0;
+exports.createCartTransactionController = exports.createProductTransactionController = void 0;
 const uuid_1 = require("uuid");
 const midtrans_1 = require("../helpers/midtrans");
 const response_1 = require("../helpers/response");
 const action_1 = require("../model/user/action");
 const action_2 = require("../model/product/action");
+const action_3 = require("../model/cart/action");
 const createProductTransactionController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const userEmail = (_a = req.session) === null || _a === void 0 ? void 0 : _a.email;
@@ -73,4 +74,53 @@ const createProductTransactionController = (req, res, next) => __awaiter(void 0,
     }
 });
 exports.createProductTransactionController = createProductTransactionController;
+const createCartTransactionController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _b;
+    const userEmail = (_b = req.session) === null || _b === void 0 ? void 0 : _b.email;
+    if (!userEmail)
+        return (0, response_1.response)({ data: null, statusCode: 400, message: "User session not found" }, res);
+    try {
+        const user = yield (0, action_1.getUserByEmail)(userEmail);
+        if (!user)
+            return (0, response_1.response)({ data: null, statusCode: 404, message: "User not found" }, res);
+        const userCart = yield (0, action_3.getCartByUserId)(user._id).populate("cart.product");
+        if (!userCart) {
+            return (0, response_1.response)({ data: null, statusCode: 400, message: "User cart is empty" }, res);
+        }
+        const price = userCart.cart
+            .map((data) => data.product.price * data.quantity)
+            .reduce((a, b) => a + b);
+        const itemDetails = userCart.cart.map((data) => ({
+            name: data.product.name,
+            price: data.product.price,
+            quantity: data.quantity,
+        }));
+        const transactionParameter = {
+            transaction_details: {
+                order_id: (0, uuid_1.v4)(),
+                gross_amount: price,
+            },
+            credit_card: {
+                secure: true,
+            },
+            customer_details: {
+                first_name: user.username,
+                email: user.email,
+            },
+            item_details: itemDetails,
+        };
+        const snapToken = yield midtrans_1.midtrans.createTransactionToken(transactionParameter);
+        return (0, response_1.response)({
+            data: { transactionToken: snapToken },
+            statusCode: 200,
+            message: "Successfully create transaction",
+        }, res);
+    }
+    catch (error) {
+        if (error instanceof Error)
+            return next(error.message);
+        next(error);
+    }
+});
+exports.createCartTransactionController = createCartTransactionController;
 //# sourceMappingURL=transaction.controller.js.map
