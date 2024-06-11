@@ -24,7 +24,7 @@ app.use((0, cors_1.default)({
 app.use((0, compression_1.default)());
 app.use((0, cookie_parser_1.default)());
 app.use((0, helmet_1.default)());
-app.use((0, express_rate_limit_1.rateLimit)({ windowMs: 15 * 60 * 1000, limit: 50 }));
+app.use((0, express_rate_limit_1.rateLimit)({ windowMs: 15 * 60 * 1000, limit: 200 }));
 app.use(body_parser_1.default.json());
 app.use(middleware_1.authorization);
 app.get("/", (_, res) => {
